@@ -27,7 +27,7 @@ func (wsc *WSConnection) Read() ([]byte, error) {
 	return data, nil
 }
 
-func (wsc *WSConnection) WriteMessage(msg *message.Message) error {
+func (wsc *WSConnection) WriteMessage(msg *message.BaseMessage) error {
 	data, err := json.Marshal(msg)
 	if err != nil {
 		return err
@@ -35,13 +35,13 @@ func (wsc *WSConnection) WriteMessage(msg *message.Message) error {
 	return wsc.Conn.WriteMessage(websocket.TextMessage, data)
 }
 
-func (wsc *WSConnection) ReadMessage() (*message.Message, error) {
+func (wsc *WSConnection) ReadMessage() (*message.BaseMessage, error) {
 	data, err := wsc.Read()
 	if err != nil {
 		return nil, err
 	}
 
-	var msg message.Message
+	var msg message.BaseMessage
 	err = json.Unmarshal(data, &msg)
 	if err != nil {
 		return nil, err

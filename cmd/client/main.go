@@ -46,11 +46,12 @@ func main() {
 
 	go func() {
 		for {
-			msg, err := client.ReadMessage()
+			baseMsg, err := client.ReadMessage()
 			if err != nil {
 				fmt.Println("Failed to read message.", err)
 				break
 			}
+			msg := baseMsg.Data.(message.ChatMessage)
 			msg.Show()
 		}
 	}()
@@ -58,7 +59,11 @@ func main() {
 	for scanner.Scan() {
 		content := scanner.Text()
 		err := client.WriteMessage(
-			message.NewClientMessage(content),
+			message.NewBaseMessage(
+				&message.ChatMessage{
+					Content: content,
+				},
+			),
 		)
 		if err != nil {
 			fmt.Println("Failed to send message.", err)
