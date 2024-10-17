@@ -12,13 +12,26 @@ import (
 	"github.com/jnaraujo/letschat/pkg/message"
 )
 
+const (
+	defaultAddr = ":3000"
+)
+
 func main() {
 	fmt.Println("==================== LetsChat ====================")
 	fmt.Println("Welcome to LetsChat. Insert your credentials below")
 	fmt.Println("to log in.")
 
-	fmt.Println("Trying to connect to the server...")
-	client := client.NewWSClient(":3000")
+	scanner := bufio.NewScanner(os.Stdin)
+
+	fmt.Printf("Server address (defaults to %s): ", defaultAddr)
+	scanner.Scan()
+	addr := scanner.Text()
+	if addr == "" {
+		addr = defaultAddr
+	}
+
+	fmt.Printf("Trying to connect to %s...\n", addr)
+	client := client.NewWSClient(addr)
 	err := client.Connect()
 	if err != nil {
 		fmt.Println("Failed to connect to the server.", err)
@@ -26,8 +39,7 @@ func main() {
 	}
 	fmt.Println("Connected successfully.")
 
-	fmt.Printf("Enter your username: ")
-	scanner := bufio.NewScanner(os.Stdin)
+	fmt.Printf("Your Username: ")
 	scanner.Scan()
 	username := scanner.Text()
 
