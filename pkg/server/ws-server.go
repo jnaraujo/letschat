@@ -34,6 +34,7 @@ func (s *Server) Run(addr string) error {
 }
 
 var upgrader = websocket.Upgrader{
+	EnableCompression: true,
 	CheckOrigin: func(r *http.Request) bool {
 		return true
 	},

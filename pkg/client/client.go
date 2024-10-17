@@ -1,7 +1,9 @@
 package client
 
 import (
+	"net/http"
 	"net/url"
+	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/jnaraujo/letschat/pkg/server"
@@ -20,8 +22,12 @@ func NewWSClient(addr string) *WSClient {
 }
 
 func (wsc *WSClient) Connect() (err error) {
-	wsc.WSConnection.Conn, _, err = websocket.DefaultDialer.Dial(
-		wsc.Addr, nil,
-	)
+	dialer := &websocket.Dialer{
+		Proxy:             http.ProxyFromEnvironment,
+		HandshakeTimeout:  45 * time.Second,
+		EnableCompression: true,
+	}
+
+	wsc.WSConnection.Conn, _, err = dialer.Dial(wsc.Addr, nil)
 	return err
 }
