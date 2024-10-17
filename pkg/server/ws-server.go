@@ -159,10 +159,16 @@ func (s *Server) handleCommand(client *Client, msg *message.ChatMessage) {
 		Server:        s,
 	}
 
+	// TODO: fix this
 	if strings.HasPrefix(msg.Content, "ls") {
 		lsCommand(cmdProps)
 		return
 	}
+	if strings.HasPrefix(msg.Content, "ping") {
+		pingCommand(cmdProps)
+		return
+	}
+
 	client.Conn.WriteMessage(
 		message.NewCommandChatMessage("command not found", time.Now()),
 	)

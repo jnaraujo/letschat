@@ -31,3 +31,11 @@ func lsCommand(props *CommandProps) {
 		message.NewCommandChatMessage(res.String(), time.Now()),
 	)
 }
+
+func pingCommand(props *CommandProps) {
+	props.MessageAuthor.Conn.WriteMessage(message.NewCommandChatMessage(
+		// in ping commands, the createdAt remains the same as the original sent
+		// maybe fix this in the future idk
+		"Pong!", props.Msg.CreatedAt,
+	))
+}

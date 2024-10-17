@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/jnaraujo/letschat/pkg/account"
 	"github.com/jnaraujo/letschat/pkg/client"
@@ -64,6 +65,12 @@ func main() {
 				fmt.Println("Failed to read message.", err)
 				break
 			}
+
+			// TODO: fix this
+			if incomingMsg.IsCommand && strings.HasPrefix(incomingMsg.Content, "Pong") {
+				incomingMsg.Content = fmt.Sprintf("Pong! %d ms", time.Since(incomingMsg.CreatedAt).Milliseconds())
+			}
+
 			incomingMsg.Show()
 		}
 	}()
@@ -73,9 +80,9 @@ func main() {
 		content = strings.TrimSpace(content)
 		clearLine()
 
-		msg := message.ChatMessage{
-			Content: content,
-		}
+		msg := message.NewChatMessage(
+			&account, content, time.Now(),
+		)
 		if strings.HasPrefix(content, "/") {
 			msg.Content = msg.Content[1:]
 			msg.IsCommand = true
