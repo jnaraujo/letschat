@@ -135,7 +135,10 @@ func (s *Server) handleIncomingMessages(client *Client) {
 		err := client.Conn.ReadMessage(&msg)
 		if err != nil {
 			slog.Error("error reading message", "err", err)
-			continue
+			// we need to find a way to detect the type of errors.
+			// for now, we are just closing the connection,
+			// even for non-critical errors.
+			return
 		}
 		if len(msg.Content) > 100 {
 			continue
