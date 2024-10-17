@@ -3,19 +3,31 @@ package server
 import (
 	"encoding/json"
 	"errors"
+	"sync"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
 
 type WSConnection struct {
 	Conn *websocket.Conn
+
+	rMutex sync.Mutex
+	wMutex sync.Mutex
 }
 
 func (wsc *WSConnection) Write(data []byte) error {
+	wsc.wMutex.Lock()
+	defer wsc.wMutex.Unlock()
+
+	wsc.Conn.SetWriteDeadline(time.Now().Add(200 * time.Millisecond))
 	return wsc.Conn.WriteMessage(websocket.TextMessage, data)
 }
 
 func (wsc *WSConnection) Read() ([]byte, error) {
+	wsc.rMutex.Lock()
+	defer wsc.rMutex.Unlock()
+
 	messageType, data, err := wsc.Conn.ReadMessage()
 	if err != nil {
 		return nil, err
