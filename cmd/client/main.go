@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/jnaraujo/letschat/pkg/client"
 	"github.com/jnaraujo/letschat/pkg/message"
@@ -58,6 +59,8 @@ func main() {
 
 	for scanner.Scan() {
 		content := scanner.Text()
+		content = strings.TrimSpace(content)
+		clearLine()
 		err := client.WriteMessage(
 			&message.ChatMessage{
 				Content: content,
@@ -68,4 +71,9 @@ func main() {
 			continue
 		}
 	}
+}
+
+func clearLine() {
+	fmt.Print("\033[1A") // move cursor one line up
+	fmt.Print("\033[K")  // clear the line
 }
