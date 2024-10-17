@@ -96,7 +96,7 @@ func (s *Server) handleWsConn(w http.ResponseWriter, r *http.Request) {
 		s.removeClient(client.Account.ID)
 		// broadcast the message to all clients - except the one that left
 		// because we are already removed it from the clients map
-		s.Broadcast(
+		s.broadcast(
 			message.NewServerChatMessage(
 				fmt.Sprintf("%s (%s) left the chat",
 					client.Account.Username, client.Account.ID),
@@ -105,7 +105,7 @@ func (s *Server) handleWsConn(w http.ResponseWriter, r *http.Request) {
 		)
 	}()
 
-	s.Broadcast(
+	s.broadcast(
 		message.NewServerChatMessage(
 			fmt.Sprintf("%s (%s) joined the chat", client.Account.Username, client.Account.ID),
 			time.Now(),
@@ -174,7 +174,7 @@ func (s *Server) handleIncomingMessages(client *Client) {
 			continue
 		}
 
-		s.Broadcast(message.NewChatMessage(
+		s.broadcast(message.NewChatMessage(
 			client.Account, msg.Content, time.Now(),
 		))
 	}
@@ -202,17 +202,8 @@ func (s *Server) handleCommand(client *Client, msg *message.ChatMessage) {
 	)
 }
 
-func (s *Server) Broadcast(msg any) {
+func (s *Server) broadcast(msg any) {
 	for _, client := range s.getClients() {
-		client.Conn.WriteMessage(msg)
-	}
-}
-
-func (s *Server) BroadcastExcept(exceptID id.ID, msg any) {
-	for _, client := range s.getClients() {
-		if client.Account.ID == exceptID {
-			continue
-		}
 		client.Conn.WriteMessage(msg)
 	}
 }
