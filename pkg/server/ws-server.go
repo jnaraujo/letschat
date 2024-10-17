@@ -154,24 +154,15 @@ func (s *Server) handleIncomingMessages(client *Client) {
 
 func (s *Server) handleCommand(client *Client, msg *message.ChatMessage) {
 	if strings.HasPrefix(msg.Content, "ls") {
-		clientIDs := make([]id.ID, 0, len(s.clients))
-		for clientID := range s.clients {
-			clientIDs = append(clientIDs, clientID)
-		}
-		slices.SortFunc(clientIDs, func(a, b id.ID) int {
-			return s.clients[a].JoinedAt.Compare(s.clients[b].JoinedAt)
-		})
-
 		var res strings.Builder
+
 		res.WriteString("==== List of Online Clients ====\n")
-		for _, clientID := range clientIDs {
-			res.WriteString(" ")
-			res.WriteString(s.clients[clientID].Account.Username)
-			res.WriteString(" (")
-			res.WriteString(string(s.clients[clientID].Account.ID))
-			res.WriteString(") - ")
-			res.WriteString(formatDuration(time.Since(s.clients[clientID].JoinedAt)))
-			res.WriteString("\n")
+		for _, clientID := range s.getSortedClientIDs() {
+			res.WriteString(fmt.Sprintf(" %s (%s) - %s\n",
+				s.clients[clientID].Account.Username,
+				string(s.clients[clientID].Account.ID),
+				formatDuration(time.Since(s.clients[clientID].JoinedAt)),
+			))
 		}
 		res.WriteString("================================")
 
@@ -183,6 +174,17 @@ func (s *Server) handleCommand(client *Client, msg *message.ChatMessage) {
 	client.Conn.WriteMessage(
 		message.NewCommandChatMessage("command not found", time.Now()),
 	)
+}
+
+func (s *Server) getSortedClientIDs() []id.ID {
+	clientIDs := make([]id.ID, 0, len(s.clients))
+	for clientID := range s.clients {
+		clientIDs = append(clientIDs, clientID)
+	}
+	slices.SortFunc(clientIDs, func(a, b id.ID) int {
+		return s.clients[a].JoinedAt.Compare(s.clients[b].JoinedAt)
+	})
+	return clientIDs
 }
 
 func (s *Server) Broadcast(msg any) {
