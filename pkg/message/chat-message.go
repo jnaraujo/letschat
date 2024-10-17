@@ -21,7 +21,7 @@ type ChatMessage struct {
 
 func NewChatMessage(author *account.Account, content string, createdAt time.Time) *ChatMessage {
 	return &ChatMessage{
-		ID:        id.NewID(16),
+		ID:        id.NewID(22),
 		Author:    author,
 		Content:   content,
 		CreatedAt: createdAt,
@@ -67,7 +67,7 @@ func (msg *ChatMessage) Show() {
 
 	fmt.Printf("[%s] <%s> %s: %s\n",
 		color.HiBlueString(timeFormat(msg.CreatedAt)),
-		pc.Sprint(string(msg.Author.ID)),
+		pc.Sprint(string(msg.Author.ID[:6])),
 		pc.Sprint(msg.Author.Username),
 		msg.Content)
 }

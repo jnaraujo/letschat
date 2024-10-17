@@ -11,7 +11,7 @@ type Account struct {
 
 func NewAccount(username string) *Account {
 	return &Account{
-		ID:       id.NewID(8),
+		ID:       id.NewID(22),
 		Username: username,
 	}
 }
