@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -137,10 +138,39 @@ func (s *Server) handleIncomingMessages(client *Client) {
 			continue
 		}
 
+		if msg.IsCommand {
+			s.handleCommand(client, &msg)
+			continue
+		}
+
 		s.Broadcast(message.NewChatMessage(
 			client.Account, msg.Content, time.Now(),
 		))
 	}
+}
+
+func (s *Server) handleCommand(client *Client, msg *message.ChatMessage) {
+	if strings.HasPrefix(msg.Content, "ls") {
+		var res strings.Builder
+		res.WriteString("==== List of Online Clients ====\n")
+		for _, client := range s.clients {
+			res.WriteString(" ")
+			res.WriteString(client.Account.Username)
+			res.WriteString(" (")
+			res.WriteString(string(client.Account.ID))
+			res.WriteString(")")
+			res.WriteString("\n")
+		}
+		res.WriteString("================================")
+
+		client.Conn.WriteMessage(
+			message.NewCommandChatMessage(res.String(), time.Now()),
+		)
+		return
+	}
+	client.Conn.WriteMessage(
+		message.NewCommandChatMessage("command not found", time.Now()),
+	)
 }
 
 func (s *Server) Broadcast(msg any) {

@@ -72,11 +72,16 @@ func main() {
 		content := scanner.Text()
 		content = strings.TrimSpace(content)
 		clearLine()
-		err := client.WriteMessage(
-			&message.ChatMessage{
-				Content: content,
-			},
-		)
+
+		msg := message.ChatMessage{
+			Content: content,
+		}
+		if strings.HasPrefix(content, "/") {
+			msg.Content = msg.Content[1:]
+			msg.IsCommand = true
+		}
+
+		err := client.WriteMessage(msg)
 		if err != nil {
 			fmt.Println("Failed to send message.", err)
 			continue
