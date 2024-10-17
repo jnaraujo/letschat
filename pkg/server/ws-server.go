@@ -62,6 +62,12 @@ func (s *Server) handleWsConn(w http.ResponseWriter, r *http.Request) {
 		if err := client.Conn.Close(); err != nil {
 			panic(err)
 		}
+		s.Broadcast(
+			message.NewServerChatMessage(
+				fmt.Sprintf("%s (%s) left the chat", client.Account.Username, client.Account.ID),
+				time.Now(),
+			),
+		)
 	}()
 
 	err = s.handleInitialConn(client)
@@ -79,24 +85,24 @@ func (s *Server) handleWsConn(w http.ResponseWriter, r *http.Request) {
 		),
 	)
 
+	s.handleIncomingMessages(client)
+}
+
+func (s *Server) handleIncomingMessages(client *Client) {
 	for {
-		var incomingMsg message.ChatMessage
-		err := client.Conn.ReadMessage(&incomingMsg)
+		var msg message.ChatMessage
+		err := client.Conn.ReadMessage(&msg)
 		if err != nil {
 			slog.Error("error reading message", "err", err)
-			return
+			continue
 		}
-
-		// max message size
-		if len(incomingMsg.Content) > 100 {
+		if len(msg.Content) > 100 {
 			continue
 		}
 
-		s.Broadcast(
-			message.NewChatMessage(
-				client.Account, incomingMsg.Content, time.Now(),
-			),
-		)
+		s.Broadcast(message.NewChatMessage(
+			client.Account, msg.Content, time.Now(),
+		))
 	}
 }
 
