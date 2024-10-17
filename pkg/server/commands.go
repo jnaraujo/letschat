@@ -21,11 +21,13 @@ func lsCommand(props *CommandProps) {
 	var res strings.Builder
 
 	res.WriteString("==== List of Online Clients ====\n")
-	for _, clientID := range sortClientIDs(props.Server.getClients()) {
+	for _, clientID := range sortClientIDs(props.Server.clients.Clients()) {
+		client := props.Server.clients.Find(clientID)
+
 		res.WriteString(fmt.Sprintf(" %s (%s) - %s\n",
-			props.Server.clients[clientID].Account.Username,
-			string(props.Server.clients[clientID].Account.ID),
-			utils.FormatDuration(time.Since(props.Server.clients[clientID].JoinedAt)),
+			client.Account.Username,
+			string(client.Account.ID),
+			utils.FormatDuration(time.Since(client.JoinedAt)),
 		))
 	}
 	res.WriteString("================================")

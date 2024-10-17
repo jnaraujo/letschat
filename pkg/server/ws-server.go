@@ -6,24 +6,20 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/jnaraujo/letschat/pkg/account"
-	"github.com/jnaraujo/letschat/pkg/id"
 	"github.com/jnaraujo/letschat/pkg/message"
 )
 
 type Server struct {
-	clients map[id.ID]*Client
-
-	mutex sync.RWMutex
+	clients *ClientList
 }
 
 func NewServer() *Server {
 	server := &Server{
-		clients: make(map[id.ID]*Client),
+		clients: NewClientList(),
 	}
 	http.HandleFunc("/ws", server.handleNewConnection)
 	return server
@@ -61,10 +57,10 @@ func (s *Server) handleNewConnection(w http.ResponseWriter, r *http.Request) {
 		slog.Error("failed to initialize connection", "err", err)
 		return
 	}
-	s.addClient(client)
+	s.clients.Add(client)
 
 	defer func() {
-		s.removeClient(client.Account.ID)
+		s.clients.Remove(client.Account.ID)
 		// broadcast the message to all clients - except the one that left
 		// because we are already removed it from the clients map
 		s.broadcast(
@@ -174,31 +170,7 @@ func (s *Server) handleCommand(client *Client, msg *message.ChatMessage) {
 }
 
 func (s *Server) broadcast(msg any) {
-	for _, client := range s.getClients() {
+	for _, client := range s.clients.Clients() {
 		client.Conn.WriteMessage(msg)
 	}
-}
-
-func (s *Server) addClient(client *Client) {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-	s.clients[client.Account.ID] = client
-}
-
-func (s *Server) removeClient(id id.ID) {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-	delete(s.clients, id)
-}
-
-func (s *Server) getClients() map[id.ID]*Client {
-	s.mutex.RLock()
-	defer s.mutex.RUnlock()
-
-	clients := make(map[id.ID]*Client, len(s.clients))
-	for id, client := range s.clients {
-		clients[id] = client
-	}
-
-	return clients
 }
