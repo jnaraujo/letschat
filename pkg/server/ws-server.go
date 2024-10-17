@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -23,6 +24,8 @@ type Client struct {
 
 type Server struct {
 	clients map[id.ID]*Client
+
+	mutex sync.RWMutex
 }
 
 func NewServer() *Server {
@@ -31,6 +34,30 @@ func NewServer() *Server {
 	}
 	http.HandleFunc("/ws", server.handleWsConn)
 	return server
+}
+
+func (s *Server) addClient(client *Client) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	s.clients[client.Account.ID] = client
+}
+
+func (s *Server) removeClient(id id.ID) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	delete(s.clients, id)
+}
+
+func (s *Server) getClients() map[id.ID]*Client {
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
+
+	clients := make(map[id.ID]*Client, len(s.clients))
+	for id, client := range s.clients {
+		clients[id] = client
+	}
+
+	return clients
 }
 
 func (s *Server) Run(addr string) error {
@@ -49,6 +76,7 @@ func (s *Server) handleWsConn(w http.ResponseWriter, r *http.Request) {
 		slog.Error("error upgrading connection", "err", err)
 		return
 	}
+	defer conn.Close()
 
 	client := &Client{
 		// unauthenticated user
@@ -58,27 +86,25 @@ func (s *Server) handleWsConn(w http.ResponseWriter, r *http.Request) {
 			Conn: conn,
 		},
 	}
-	s.clients[client.Account.ID] = client
-
-	defer func() {
-		slog.Info("closing connection", "ID", client.Account.ID)
-		delete(s.clients, client.Account.ID)
-		if err := client.Conn.Close(); err != nil {
-			panic(err)
-		}
-		s.Broadcast(
-			message.NewServerChatMessage(
-				fmt.Sprintf("%s (%s) left the chat", client.Account.Username, client.Account.ID),
-				time.Now(),
-			),
-		)
-	}()
-
 	err = s.handleAuth(client)
 	if err != nil {
 		slog.Error("failed to initialize connection", "err", err)
 		return
 	}
+	s.addClient(client)
+
+	defer func() {
+		s.removeClient(client.Account.ID)
+		// broadcast the message to all clients - except the one that left
+		// because we are already removed it from the clients map
+		s.Broadcast(
+			message.NewServerChatMessage(
+				fmt.Sprintf("%s (%s) left the chat",
+					client.Account.Username, client.Account.ID),
+				time.Now(),
+			),
+		)
+	}()
 
 	s.Broadcast(
 		message.NewServerChatMessage(
@@ -91,8 +117,8 @@ func (s *Server) handleWsConn(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleAuth(client *Client) error {
-	var clientAuth message.AuthMessageClient
-	err := client.Conn.ReadMessage(&clientAuth)
+	var authMsg message.AuthMessageClient
+	err := client.Conn.ReadMessage(&authMsg)
 	if err != nil {
 		client.Conn.WriteMessage(message.AuthMessageServer{
 			Status:  "auth_error",
@@ -101,14 +127,14 @@ func (s *Server) handleAuth(client *Client) error {
 		return err
 	}
 
-	if len(clientAuth.Username) <= 3 {
+	if len(authMsg.Username) <= 3 {
 		client.Conn.WriteMessage(message.AuthMessageServer{
 			Status:  "auth_error",
 			Content: "username is too short",
 		})
 		return errors.New("username is too short")
 	}
-	if len(clientAuth.Username) >= 16 {
+	if len(authMsg.Username) >= 16 {
 		client.Conn.WriteMessage(message.AuthMessageServer{
 			Status:  "auth_error",
 			Content: "username is too long",
@@ -116,7 +142,7 @@ func (s *Server) handleAuth(client *Client) error {
 		return errors.New("username is too long")
 	}
 
-	client.Account.Username = clientAuth.Username
+	client.Account.Username = authMsg.Username
 
 	err = client.Conn.WriteMessage(message.AuthMessageServer{
 		Status:  "ok",
@@ -178,24 +204,26 @@ func (s *Server) handleCommand(client *Client, msg *message.ChatMessage) {
 }
 
 func (s *Server) getSortedClientIDs() []id.ID {
-	clientIDs := make([]id.ID, 0, len(s.clients))
-	for clientID := range s.clients {
+	clients := s.getClients()
+
+	clientIDs := make([]id.ID, 0, len(clients))
+	for clientID := range clients {
 		clientIDs = append(clientIDs, clientID)
 	}
 	slices.SortFunc(clientIDs, func(a, b id.ID) int {
-		return s.clients[a].JoinedAt.Compare(s.clients[b].JoinedAt)
+		return clients[a].JoinedAt.Compare(clients[b].JoinedAt)
 	})
 	return clientIDs
 }
 
 func (s *Server) Broadcast(msg any) {
-	for _, client := range s.clients {
+	for _, client := range s.getClients() {
 		client.Conn.WriteMessage(msg)
 	}
 }
 
 func (s *Server) BroadcastExcept(exceptID id.ID, msg any) {
-	for _, client := range s.clients {
+	for _, client := range s.getClients() {
 		if client.Account.ID == exceptID {
 			continue
 		}
