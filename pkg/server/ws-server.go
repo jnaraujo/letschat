@@ -153,22 +153,14 @@ func (s *Server) handleIncomingMessages(client *Client) {
 }
 
 func (s *Server) handleCommand(client *Client, msg *message.ChatMessage) {
+	cmdProps := &CommandProps{
+		MessageAuthor: client,
+		Msg:           msg,
+		Server:        s,
+	}
+
 	if strings.HasPrefix(msg.Content, "ls") {
-		var res strings.Builder
-
-		res.WriteString("==== List of Online Clients ====\n")
-		for _, clientID := range s.getSortedClientIDs() {
-			res.WriteString(fmt.Sprintf(" %s (%s) - %s\n",
-				s.clients[clientID].Account.Username,
-				string(s.clients[clientID].Account.ID),
-				formatDuration(time.Since(s.clients[clientID].JoinedAt)),
-			))
-		}
-		res.WriteString("================================")
-
-		client.Conn.WriteMessage(
-			message.NewCommandChatMessage(res.String(), time.Now()),
-		)
+		lsCommand(cmdProps)
 		return
 	}
 	client.Conn.WriteMessage(
