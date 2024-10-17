@@ -2,9 +2,11 @@ package server
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
+	"github.com/jnaraujo/letschat/pkg/id"
 	"github.com/jnaraujo/letschat/pkg/message"
 	"github.com/jnaraujo/letschat/pkg/utils"
 )
@@ -19,7 +21,7 @@ func lsCommand(props *CommandProps) {
 	var res strings.Builder
 
 	res.WriteString("==== List of Online Clients ====\n")
-	for _, clientID := range props.Server.getSortedClientIDs() {
+	for _, clientID := range sortClientIDs(props.Server.getClients()) {
 		res.WriteString(fmt.Sprintf(" %s (%s) - %s\n",
 			props.Server.clients[clientID].Account.Username,
 			string(props.Server.clients[clientID].Account.ID),
@@ -39,4 +41,15 @@ func pingCommand(props *CommandProps) {
 		// maybe fix this in the future idk
 		"Pong!", props.Msg.CreatedAt,
 	))
+}
+
+func sortClientIDs(clients map[id.ID]*Client) []id.ID {
+	clientIDs := make([]id.ID, 0, len(clients))
+	for clientID := range clients {
+		clientIDs = append(clientIDs, clientID)
+	}
+	slices.SortFunc(clientIDs, func(a, b id.ID) int {
+		return clients[a].JoinedAt.Compare(clients[b].JoinedAt)
+	})
+	return clientIDs
 }

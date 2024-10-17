@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -201,19 +200,6 @@ func (s *Server) handleCommand(client *Client, msg *message.ChatMessage) {
 	client.Conn.WriteMessage(
 		message.NewCommandChatMessage("command not found", time.Now()),
 	)
-}
-
-func (s *Server) getSortedClientIDs() []id.ID {
-	clients := s.getClients()
-
-	clientIDs := make([]id.ID, 0, len(clients))
-	for clientID := range clients {
-		clientIDs = append(clientIDs, clientID)
-	}
-	slices.SortFunc(clientIDs, func(a, b id.ID) int {
-		return clients[a].JoinedAt.Compare(clients[b].JoinedAt)
-	})
-	return clientIDs
 }
 
 func (s *Server) Broadcast(msg any) {
