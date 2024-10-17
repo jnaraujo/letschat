@@ -5,8 +5,8 @@ import (
 )
 
 type Account struct {
-	ID       id.ID
-	Username string
+	ID       id.ID  `json:"id"`
+	Username string `json:"username"`
 }
 
 func NewAccount(username string) *Account {
