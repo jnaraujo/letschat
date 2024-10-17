@@ -86,24 +86,6 @@ func (s *Server) handleWsConn(w http.ResponseWriter, r *http.Request) {
 	s.handleIncomingMessages(client)
 }
 
-func (s *Server) handleIncomingMessages(client *Client) {
-	for {
-		var msg message.ChatMessage
-		err := client.Conn.ReadMessage(&msg)
-		if err != nil {
-			slog.Error("error reading message", "err", err)
-			continue
-		}
-		if len(msg.Content) > 100 {
-			continue
-		}
-
-		s.Broadcast(message.NewChatMessage(
-			client.Account, msg.Content, time.Now(),
-		))
-	}
-}
-
 func (s *Server) handleAuth(client *Client) error {
 	var clientAuth message.AuthMessageClient
 	err := client.Conn.ReadMessage(&clientAuth)
@@ -141,6 +123,24 @@ func (s *Server) handleAuth(client *Client) error {
 	}
 
 	return client.Conn.WriteMessage(client.Account)
+}
+
+func (s *Server) handleIncomingMessages(client *Client) {
+	for {
+		var msg message.ChatMessage
+		err := client.Conn.ReadMessage(&msg)
+		if err != nil {
+			slog.Error("error reading message", "err", err)
+			continue
+		}
+		if len(msg.Content) > 100 {
+			continue
+		}
+
+		s.Broadcast(message.NewChatMessage(
+			client.Account, msg.Content, time.Now(),
+		))
+	}
 }
 
 func (s *Server) Broadcast(msg any) {
