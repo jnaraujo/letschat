@@ -25,32 +25,8 @@ func NewServer() *Server {
 	server := &Server{
 		clients: make(map[id.ID]*Client),
 	}
-	http.HandleFunc("/ws", server.handleWsConn)
+	http.HandleFunc("/ws", server.handleNewConnection)
 	return server
-}
-
-func (s *Server) addClient(client *Client) {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-	s.clients[client.Account.ID] = client
-}
-
-func (s *Server) removeClient(id id.ID) {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-	delete(s.clients, id)
-}
-
-func (s *Server) getClients() map[id.ID]*Client {
-	s.mutex.RLock()
-	defer s.mutex.RUnlock()
-
-	clients := make(map[id.ID]*Client, len(s.clients))
-	for id, client := range s.clients {
-		clients[id] = client
-	}
-
-	return clients
 }
 
 func (s *Server) Run(addr string) error {
@@ -63,7 +39,7 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-func (s *Server) handleWsConn(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleNewConnection(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		slog.Error("error upgrading connection", "err", err)
@@ -200,4 +176,28 @@ func (s *Server) broadcast(msg any) {
 	for _, client := range s.getClients() {
 		client.Conn.WriteMessage(msg)
 	}
+}
+
+func (s *Server) addClient(client *Client) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	s.clients[client.Account.ID] = client
+}
+
+func (s *Server) removeClient(id id.ID) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	delete(s.clients, id)
+}
+
+func (s *Server) getClients() map[id.ID]*Client {
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
+
+	clients := make(map[id.ID]*Client, len(s.clients))
+	for id, client := range s.clients {
+		clients[id] = client
+	}
+
+	return clients
 }
