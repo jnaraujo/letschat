@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/jnaraujo/letschat/pkg/message"
+	"github.com/jnaraujo/letschat/pkg/utils"
 )
 
 type CommandProps struct {
@@ -22,7 +23,7 @@ func lsCommand(props *CommandProps) {
 		res.WriteString(fmt.Sprintf(" %s (%s) - %s\n",
 			props.Server.clients[clientID].Account.Username,
 			string(props.Server.clients[clientID].Account.ID),
-			formatDuration(time.Since(props.Server.clients[clientID].JoinedAt)),
+			utils.FormatDuration(time.Since(props.Server.clients[clientID].JoinedAt)),
 		))
 	}
 	res.WriteString("================================")

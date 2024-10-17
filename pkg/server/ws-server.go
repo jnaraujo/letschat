@@ -230,23 +230,3 @@ func (s *Server) BroadcastExcept(exceptID id.ID, msg any) {
 		client.Conn.WriteMessage(msg)
 	}
 }
-
-func formatDuration(d time.Duration) string {
-	if d.Hours() >= 1 {
-		hours := int(d.Hours())
-		return fmt.Sprintf("%d hour%s ago", hours, plural(hours))
-	} else if d.Minutes() >= 1 {
-		minutes := int(d.Minutes())
-		return fmt.Sprintf("%d minute%s ago", minutes, plural(minutes))
-	} else {
-		seconds := int(d.Seconds())
-		return fmt.Sprintf("%d second%s ago", seconds, plural(seconds))
-	}
-}
-
-func plural(n int) string {
-	if n == 1 {
-		return ""
-	}
-	return "s"
-}
