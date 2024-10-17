@@ -31,7 +31,7 @@ func (wsc *WSConnection) WriteMessage(msg any) error {
 	if err != nil {
 		return err
 	}
-	return wsc.Conn.WriteMessage(websocket.TextMessage, data)
+	return wsc.Write(data)
 }
 
 func (wsc *WSConnection) ReadMessage(msg any) error {
