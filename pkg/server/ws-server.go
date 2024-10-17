@@ -15,12 +15,6 @@ import (
 	"github.com/jnaraujo/letschat/pkg/message"
 )
 
-type Client struct {
-	Conn     Connection
-	Account  *account.Account
-	JoinedAt time.Time
-}
-
 type Server struct {
 	clients map[id.ID]*Client
 
@@ -77,14 +71,14 @@ func (s *Server) handleWsConn(w http.ResponseWriter, r *http.Request) {
 	}
 	defer conn.Close()
 
-	client := &Client{
-		// unauthenticated user
-		Account:  account.NewAccount("Anonymous"),
-		JoinedAt: time.Now(),
-		Conn: &WSConnection{
+	// unauthenticated user
+	client := NewClient(
+		account.NewAccount("Anonymous"),
+		&WSConnection{
 			Conn: conn,
 		},
-	}
+	)
+
 	err = s.handleAuth(client)
 	if err != nil {
 		slog.Error("failed to initialize connection", "err", err)
