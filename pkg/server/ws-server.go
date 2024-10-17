@@ -73,21 +73,19 @@ func (s *Server) handleWsConn(w http.ResponseWriter, r *http.Request) {
 	client.Conn.Write([]byte("ok"))
 
 	s.Broadcast(
-		message.NewBaseMessage(
-			message.NewServerChatMessage(
-				fmt.Sprintf("New connection from %s (%s)", client.Account.Username, client.Account.ID),
-				time.Now(),
-			),
+		message.NewServerChatMessage(
+			fmt.Sprintf("New connection from %s (%s)", client.Account.Username, client.Account.ID),
+			time.Now(),
 		),
 	)
 
 	for {
-		baseMsg, err := client.Conn.ReadMessage()
+		var incomingMsg message.ChatMessage
+		err := client.Conn.ReadMessage(&incomingMsg)
 		if err != nil {
 			slog.Error("error reading message", "err", err)
 			return
 		}
-		incomingMsg := baseMsg.Data.(message.ChatMessage)
 
 		// max message size
 		if len(incomingMsg.Content) > 100 {
@@ -95,8 +93,8 @@ func (s *Server) handleWsConn(w http.ResponseWriter, r *http.Request) {
 		}
 
 		s.Broadcast(
-			message.NewBaseMessage(
-				message.NewChatMessage(client.Account, incomingMsg.Content, time.Now()),
+			message.NewChatMessage(
+				client.Account, incomingMsg.Content, time.Now(),
 			),
 		)
 	}
@@ -121,17 +119,17 @@ func (s *Server) handleInitialConn(client *Client) error {
 	return nil
 }
 
-func (s *Server) Broadcast(msg *message.BaseMessage) {
+func (s *Server) Broadcast(msg any) {
 	for _, client := range s.clients {
-		client.Conn.WriteMessage(&message.BaseMessage{})
+		client.Conn.WriteMessage(msg)
 	}
 }
 
-func (s *Server) BroadcastExcept(exceptID id.ID, msg *message.BaseMessage) {
+func (s *Server) BroadcastExcept(exceptID id.ID, msg any) {
 	for _, client := range s.clients {
 		if client.Account.ID == exceptID {
 			continue
 		}
-		client.Conn.WriteMessage(message.NewBaseMessage(msg))
+		client.Conn.WriteMessage(msg)
 	}
 }

@@ -5,7 +5,6 @@ import (
 	"errors"
 
 	"github.com/gorilla/websocket"
-	"github.com/jnaraujo/letschat/pkg/message"
 )
 
 type WSConnection struct {
@@ -27,7 +26,7 @@ func (wsc *WSConnection) Read() ([]byte, error) {
 	return data, nil
 }
 
-func (wsc *WSConnection) WriteMessage(msg *message.BaseMessage) error {
+func (wsc *WSConnection) WriteMessage(msg any) error {
 	data, err := json.Marshal(msg)
 	if err != nil {
 		return err
@@ -35,18 +34,17 @@ func (wsc *WSConnection) WriteMessage(msg *message.BaseMessage) error {
 	return wsc.Conn.WriteMessage(websocket.TextMessage, data)
 }
 
-func (wsc *WSConnection) ReadMessage() (*message.BaseMessage, error) {
+func (wsc *WSConnection) ReadMessage(msg any) error {
 	data, err := wsc.Read()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	var msg message.BaseMessage
-	err = json.Unmarshal(data, &msg)
+	err = json.Unmarshal(data, msg)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return &msg, nil
+	return nil
 }
 
 func (wsc *WSConnection) Close() error {

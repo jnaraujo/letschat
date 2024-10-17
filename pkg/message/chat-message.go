@@ -29,16 +29,12 @@ func NewChatMessage(author *account.Account, content string, createdAt time.Time
 }
 
 func NewServerChatMessage(content string, createdAt time.Time) *ChatMessage {
-	return &ChatMessage{
-		ID: id.NewID(16),
-		Author: &account.Account{
-			ID:       "SERVER",
-			Username: "SERVER",
-		},
-		Content:   content,
-		CreatedAt: createdAt,
-		IsServer:  true,
-	}
+	msg := NewChatMessage(&account.Account{
+		ID:       "SERVER",
+		Username: "SERVER",
+	}, content, createdAt)
+	msg.IsServer = true
+	return msg
 }
 
 func (msg *ChatMessage) Show() {
