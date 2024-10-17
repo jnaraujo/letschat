@@ -78,7 +78,7 @@ func (s *Server) handleWsConn(w http.ResponseWriter, r *http.Request) {
 
 	s.Broadcast(
 		message.NewServerChatMessage(
-			fmt.Sprintf("New connection from %s (%s)", client.Account.Username, client.Account.ID),
+			fmt.Sprintf("%s (%s) joined the chat", client.Account.Username, client.Account.ID),
 			time.Now(),
 		),
 	)
