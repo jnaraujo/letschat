@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/jnaraujo/letschat/pkg/account"
 	"github.com/jnaraujo/letschat/pkg/client"
 	"github.com/jnaraujo/letschat/pkg/message"
 )
@@ -29,19 +30,29 @@ func main() {
 	scanner.Scan()
 	username := scanner.Text()
 
-	err = client.Write([]byte(username))
+	err = client.WriteMessage(message.AuthMessageClient{
+		Username: username,
+	})
 	if err != nil {
 		fmt.Println("Failed to send message.", err)
 		return
 	}
 
-	data, err := client.Read()
+	var serverAuthMsg message.AuthMessageServer
+	err = client.ReadMessage(&serverAuthMsg)
 	if err != nil {
 		fmt.Println("Failed to read message.", err)
 		return
 	}
-	if string(data) != "ok" {
-		fmt.Println("Failed to login.", string(data))
+	if serverAuthMsg.Status != "ok" {
+		fmt.Println("Failed to login.", serverAuthMsg.Content)
+		return
+	}
+
+	var account account.Account
+	err = client.ReadMessage(&account)
+	if err != nil {
+		fmt.Println("Failed to read message.", err)
 		return
 	}
 

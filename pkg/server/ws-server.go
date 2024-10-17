@@ -70,13 +70,11 @@ func (s *Server) handleWsConn(w http.ResponseWriter, r *http.Request) {
 		)
 	}()
 
-	err = s.handleInitialConn(client)
+	err = s.handleAuth(client)
 	if err != nil {
-		client.Conn.Write([]byte("failed to initialize connection"))
 		slog.Error("failed to initialize connection", "err", err)
 		return
 	}
-	client.Conn.Write([]byte("ok"))
 
 	s.Broadcast(
 		message.NewServerChatMessage(
@@ -106,23 +104,43 @@ func (s *Server) handleIncomingMessages(client *Client) {
 	}
 }
 
-func (s *Server) handleInitialConn(client *Client) error {
-	msg, err := client.Conn.Read()
+func (s *Server) handleAuth(client *Client) error {
+	var clientAuth message.AuthMessageClient
+	err := client.Conn.ReadMessage(&clientAuth)
+	if err != nil {
+		client.Conn.WriteMessage(message.AuthMessageServer{
+			Status:  "auth_error",
+			Content: "failed to read message",
+		})
+		return err
+	}
+
+	if len(clientAuth.Username) <= 3 {
+		client.Conn.WriteMessage(message.AuthMessageServer{
+			Status:  "auth_error",
+			Content: "username is too short",
+		})
+		return errors.New("username is too short")
+	}
+	if len(clientAuth.Username) >= 16 {
+		client.Conn.WriteMessage(message.AuthMessageServer{
+			Status:  "auth_error",
+			Content: "username is too long",
+		})
+		return errors.New("username is too long")
+	}
+
+	client.Account.Username = clientAuth.Username
+
+	err = client.Conn.WriteMessage(message.AuthMessageServer{
+		Status:  "ok",
+		Content: "account authenticated",
+	})
 	if err != nil {
 		return err
 	}
 
-	// TODO: create a default message format for the initial connection
-	username := string(msg)
-	if len(username) <= 3 {
-		return errors.New("username is too short")
-	}
-	if len(username) >= 16 {
-		return errors.New("username is too long")
-	}
-
-	client.Account.Username = username
-	return nil
+	return client.Conn.WriteMessage(client.Account)
 }
 
 func (s *Server) Broadcast(msg any) {
