@@ -37,6 +37,8 @@ func main() {
 		fmt.Println("Failed to connect to the server.", err)
 		return
 	}
+	defer client.Close()
+
 	fmt.Println("Connected successfully.")
 
 	fmt.Printf("Your Username: ")
