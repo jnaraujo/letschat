@@ -21,7 +21,7 @@ func lsCommand(props *CommandProps) {
 	var res strings.Builder
 
 	res.WriteString("==== List of Online Clients ====\n")
-	for _, clientID := range sortClientIDs(props.Server.clients.Clients()) {
+	for _, clientID := range sortClientIDsByJoinTime(props.Server.clients.List()) {
 		client := props.Server.clients.Find(clientID)
 
 		res.WriteString(fmt.Sprintf(" %s (%s) - %s\n",
@@ -45,13 +45,15 @@ func pingCommand(props *CommandProps) {
 	))
 }
 
-func sortClientIDs(clients map[id.ID]*Client) []id.ID {
-	clientIDs := make([]id.ID, 0, len(clients))
-	for clientID := range clients {
-		clientIDs = append(clientIDs, clientID)
-	}
-	slices.SortFunc(clientIDs, func(a, b id.ID) int {
-		return clients[a].JoinedAt.Compare(clients[b].JoinedAt)
+func sortClientIDsByJoinTime(clients []*Client) []id.ID {
+	slices.SortFunc(clients, func(clientA, clientB *Client) int {
+		return clientA.JoinedAt.Compare(clientB.JoinedAt)
 	})
+
+	clientIDs := make([]id.ID, 0, len(clients))
+	for _, client := range clients {
+		clientIDs = append(clientIDs, client.Account.ID)
+	}
+
 	return clientIDs
 }

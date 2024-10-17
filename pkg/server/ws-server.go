@@ -170,7 +170,7 @@ func (s *Server) handleCommand(client *Client, msg *message.ChatMessage) {
 }
 
 func (s *Server) broadcast(msg any) {
-	for _, client := range s.clients.Clients() {
+	for _, client := range s.clients.List() {
 		client.Conn.WriteMessage(msg)
 	}
 }

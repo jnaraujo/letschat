@@ -38,6 +38,7 @@ func (cl *ClientList) Add(client *Client) {
 	defer cl.mutex.Unlock()
 	cl.clients[client.Account.ID] = client
 }
+
 func (cl *ClientList) Find(id id.ID) *Client {
 	cl.mutex.RLock()
 	defer cl.mutex.RUnlock()
@@ -50,14 +51,21 @@ func (cl *ClientList) Remove(id id.ID) {
 	delete(cl.clients, id)
 }
 
-func (cl *ClientList) Clients() map[id.ID]*Client {
+func (cl *ClientList) Has(id id.ID) bool {
+	cl.mutex.Lock()
+	defer cl.mutex.Unlock()
+
+	_, exists := cl.clients[id]
+	return exists
+}
+
+func (cl *ClientList) List() []*Client {
 	cl.mutex.RLock()
 	defer cl.mutex.RUnlock()
 
-	clients := make(map[id.ID]*Client, len(cl.clients))
-	for id, client := range cl.clients {
-		clients[id] = client
+	clients := make([]*Client, 0, len(cl.clients))
+	for _, client := range cl.clients {
+		clients = append(clients, client)
 	}
-
 	return clients
 }
