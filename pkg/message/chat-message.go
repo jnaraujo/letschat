@@ -38,6 +38,18 @@ func NewServerChatMessage(content string, createdAt time.Time) *ChatMessage {
 }
 
 func (msg *ChatMessage) Show() {
+	if msg.IsServer {
+		c := color.New(color.Italic, color.Faint)
+
+		fmt.Printf("[%s] <%s>: %s\n",
+			color.HiBlueString(timeFormat(msg.CreatedAt)),
+			color.WhiteString(string(msg.Author.ID)),
+			c.Sprintf(msg.Content),
+		)
+
+		return
+	}
+
 	pc := color.New(s2c(string(msg.Author.ID)))
 
 	fmt.Printf("[%s] <%s> %s: %s\n",
