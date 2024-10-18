@@ -1,10 +1,13 @@
 package server
 
 import (
+	"fmt"
 	"sync"
+	"time"
 
 	"github.com/jnaraujo/letschat/pkg/account"
 	"github.com/jnaraujo/letschat/pkg/id"
+	"github.com/jnaraujo/letschat/pkg/message"
 )
 
 type Room struct {
@@ -26,6 +29,19 @@ func NewRoom(name string, owner *account.Account) *Room {
 func (r *Room) AddClient(client *Client) {
 	client.RoomID = r.ID
 	r.Clients.Add(client)
+
+	r.Broadcast(
+		message.NewServerChatMessage(
+			fmt.Sprintf(
+				"%s (%s) joined the chat", client.Account.Username, client.Account.ID,
+			),
+			message.CharRoom{
+				ID:   r.ID,
+				Name: r.Name,
+			},
+			time.Now(),
+		),
+	)
 }
 
 func (r *Room) RemoveClient(id id.ID) {

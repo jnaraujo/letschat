@@ -93,19 +93,6 @@ func (s *Server) handleNewConnection(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	clientRoom.Broadcast(
-		message.NewServerChatMessage(
-			fmt.Sprintf(
-				"%s (%s) joined the chat", client.Account.Username, client.Account.ID,
-			),
-			message.CharRoom{
-				ID:   clientRoom.ID,
-				Name: clientRoom.Name,
-			},
-			time.Now(),
-		),
-	)
-
 	s.handleIncomingMessages(client)
 }
 
