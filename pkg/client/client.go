@@ -15,7 +15,7 @@ type WSClient struct {
 }
 
 func NewWSClient(addr string) *WSClient {
-	u := url.URL{Scheme: "ws", Host: addr, Path: "/ws"}
+	u := url.URL{Scheme: "wss", Host: addr, Path: "/ws"}
 	return &WSClient{
 		Addr: u.String(),
 	}
