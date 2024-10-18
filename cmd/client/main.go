@@ -93,7 +93,6 @@ func main() {
 	for scanner.Scan() {
 		content := scanner.Text()
 		content = strings.TrimSpace(content)
-		clearLine()
 
 		msg := message.NewChatMessage(
 			&account, content, message.CharRoom{
@@ -103,6 +102,8 @@ func main() {
 		if strings.HasPrefix(content, "/") {
 			msg.Content = msg.Content[1:]
 			msg.IsCommand = true
+		} else {
+			clearLine()
 		}
 
 		err := client.WriteMessage(msg)
