@@ -68,11 +68,11 @@ func (s *Server) handleNewConnection(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	clientRoom := s.rooms.Find(defaultRoomID)
+	clientRoom := s.rooms.Find(client.RoomID)
 	if clientRoom == nil {
+		fmt.Println("client room does not exists")
 		return
 	}
-	clientRoom.AddClient(client)
 	defer func() {
 		room := s.rooms.Find(client.RoomID)
 		if room != nil {
@@ -137,10 +137,22 @@ func (s *Server) handleAuth(client *Client) error {
 
 	client.Account.Username = authMsg.Username
 
+	if authMsg.RoomID != "" && s.rooms.Has(authMsg.RoomID) {
+		s.rooms.Find(authMsg.RoomID).AddClient(client)
+	} else {
+		room := s.rooms.Find(defaultRoomID)
+		if room == nil {
+			return errors.New("default room does not exists")
+		}
+		room.AddClient(client)
+	}
+
 	err = client.Conn.WriteMessage(message.AuthMessageServer{
 		Status:  "ok",
 		Content: "account authenticated",
+		RoomID:  client.RoomID, // TODO: should check whether the room exists
 	})
+
 	if err != nil {
 		return err
 	}
