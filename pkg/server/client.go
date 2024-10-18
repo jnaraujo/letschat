@@ -11,6 +11,7 @@ import (
 type Client struct {
 	Conn     Connection
 	Account  *account.Account
+	RoomID   id.ID
 	JoinedAt time.Time
 }
 

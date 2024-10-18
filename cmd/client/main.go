@@ -9,6 +9,7 @@ import (
 
 	"github.com/jnaraujo/letschat/pkg/account"
 	"github.com/jnaraujo/letschat/pkg/client"
+	"github.com/jnaraujo/letschat/pkg/id"
 	"github.com/jnaraujo/letschat/pkg/message"
 )
 
@@ -95,7 +96,9 @@ func main() {
 		clearLine()
 
 		msg := message.NewChatMessage(
-			&account, content, time.Now(),
+			&account, content, message.CharRoom{
+				ID: id.ID("ALL"),
+			}, time.Now(),
 		)
 		if strings.HasPrefix(content, "/") {
 			msg.Content = msg.Content[1:]

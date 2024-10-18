@@ -10,17 +10,27 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/jnaraujo/letschat/pkg/account"
+	"github.com/jnaraujo/letschat/pkg/id"
 	"github.com/jnaraujo/letschat/pkg/message"
 )
 
+const (
+	defaultRoomID id.ID = "ALL"
+)
+
 type Server struct {
-	clients *ClientList
+	rooms *RoomList
 }
 
 func NewServer() *Server {
 	server := &Server{
-		clients: NewClientList(),
+		rooms: NewRoomList(),
 	}
+
+	defaultRoom := NewRoom("ALL", nil)
+	defaultRoom.ID = defaultRoomID
+	server.rooms.Add(defaultRoom)
+
 	http.HandleFunc("/ws", server.handleNewConnection)
 	return server
 }
@@ -57,24 +67,41 @@ func (s *Server) handleNewConnection(w http.ResponseWriter, r *http.Request) {
 		slog.Error("failed to initialize connection", "err", err)
 		return
 	}
-	s.clients.Add(client)
 
+	clientRoom := s.rooms.Find(defaultRoomID)
+	if clientRoom == nil {
+		return
+	}
+	clientRoom.AddClient(client)
 	defer func() {
-		s.clients.Remove(client.Account.ID)
-		// broadcast the message to all clients - except the one that left
-		// because we are already removed it from the clients map
-		s.broadcast(
-			message.NewServerChatMessage(
-				fmt.Sprintf("%s (%s) left the chat",
-					client.Account.Username, client.Account.ID),
-				time.Now(),
-			),
-		)
+		room := s.rooms.Find(client.RoomID)
+		if room != nil {
+			s.rooms.Remove(client.RoomID)
+			room.Broadcast(
+				message.NewServerChatMessage(
+					fmt.Sprintf(
+						"%s (%s) left the chat",
+						client.Account.Username, client.Account.ID,
+					),
+					message.CharRoom{
+						ID:   room.ID,
+						Name: room.Name,
+					},
+					time.Now(),
+				),
+			)
+		}
 	}()
 
-	s.broadcast(
+	clientRoom.Broadcast(
 		message.NewServerChatMessage(
-			fmt.Sprintf("%s (%s) joined the chat", client.Account.Username, client.Account.ID),
+			fmt.Sprintf(
+				"%s (%s) joined the chat", client.Account.Username, client.Account.ID,
+			),
+			message.CharRoom{
+				ID:   clientRoom.ID,
+				Name: clientRoom.Name,
+			},
 			time.Now(),
 		),
 	)
@@ -141,9 +168,19 @@ func (s *Server) handleIncomingMessages(client *Client) {
 			continue
 		}
 
-		s.broadcast(message.NewChatMessage(
-			client.Account, msg.Content, time.Now(),
-		))
+		room := s.rooms.Find(client.RoomID)
+		if room == nil {
+			continue
+		}
+
+		room.Broadcast(
+			message.NewChatMessage(
+				client.Account, msg.Content, message.CharRoom{
+					ID:   room.ID,
+					Name: room.Name,
+				}, time.Now(),
+			),
+		)
 	}
 }
 
@@ -165,12 +202,8 @@ func (s *Server) handleCommand(client *Client, msg *message.ChatMessage) {
 	}
 
 	client.Conn.WriteMessage(
-		message.NewCommandChatMessage("command not found", time.Now()),
+		message.NewCommandChatMessage(
+			"command not found", time.Now(),
+		),
 	)
-}
-
-func (s *Server) broadcast(msg any) {
-	for _, client := range s.clients.List() {
-		client.Conn.WriteMessage(msg)
-	}
 }

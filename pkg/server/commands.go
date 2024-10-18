@@ -20,9 +20,23 @@ type CommandProps struct {
 func lsCommand(props *CommandProps) {
 	var res strings.Builder
 
+	room := props.Server.rooms.Find(props.MessageAuthor.RoomID)
+	if room == nil {
+		props.MessageAuthor.Conn.WriteMessage(
+			message.NewCommandChatMessage(
+				"You need to be connected to a room to view the list of online clients.",
+				time.Now(),
+			),
+		)
+		return
+	}
+
 	res.WriteString("==== List of Online Clients ====\n")
-	for _, clientID := range sortClientIDsByJoinTime(props.Server.clients.List()) {
-		client := props.Server.clients.Find(clientID)
+	for _, clientID := range sortClientIDsByJoinTime(room.Clients.List()) {
+		client := room.Clients.Find(clientID)
+		if client == nil {
+			continue
+		}
 
 		res.WriteString(fmt.Sprintf(" %s (%s) - %s\n",
 			client.Account.Username,

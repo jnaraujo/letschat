@@ -66,7 +66,9 @@ func handleClient(id, N int) {
 	}
 
 	exampleMessage := message.NewChatMessage(
-		&account, fmt.Sprintf("example message %d", id), time.Now(),
+		&account, fmt.Sprintf("example message %d", id), message.CharRoom{
+			ID: "ALL",
+		}, time.Now(),
 	)
 
 	go func() {

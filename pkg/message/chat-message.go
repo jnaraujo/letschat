@@ -10,30 +10,40 @@ import (
 	"github.com/jnaraujo/letschat/pkg/id"
 )
 
+type CharRoom struct {
+	ID   id.ID  `json:"id"`
+	Name string `json:"name"`
+}
+
 type ChatMessage struct {
 	ID        id.ID            `json:"id"`
 	IsServer  bool             `json:"is_server"`
+	Room      CharRoom         `json:"room"`
 	Author    *account.Account `json:"author"`
 	Content   string           `json:"content"`
 	CreatedAt time.Time        `json:"created_at"`
 	IsCommand bool             `json:"is_command"`
 }
 
-func NewChatMessage(author *account.Account, content string, createdAt time.Time) *ChatMessage {
+func NewChatMessage(
+	author *account.Account, content string, chatRoom CharRoom, createdAt time.Time,
+) *ChatMessage {
 	return &ChatMessage{
 		ID:        id.NewID(22),
 		Author:    author,
 		Content:   content,
 		CreatedAt: createdAt,
+		Room:      chatRoom,
+		IsCommand: false,
 		IsServer:  false,
 	}
 }
 
-func NewServerChatMessage(content string, createdAt time.Time) *ChatMessage {
+func NewServerChatMessage(content string, chatRoom CharRoom, createdAt time.Time) *ChatMessage {
 	msg := NewChatMessage(&account.Account{
 		ID:       "SERVER",
 		Username: "SERVER",
-	}, content, createdAt)
+	}, content, chatRoom, createdAt)
 	msg.IsServer = true
 	return msg
 }
@@ -42,7 +52,10 @@ func NewCommandChatMessage(content string, createdAt time.Time) *ChatMessage {
 	msg := NewChatMessage(&account.Account{
 		ID:       "COMMAND",
 		Username: "COMMAND",
-	}, content, createdAt)
+	}, content, CharRoom{
+		ID:   id.ID("COMMAND_RESPONSE"),
+		Name: "Command Response",
+	}, createdAt)
 	msg.IsCommand = true
 	return msg
 }
@@ -65,8 +78,9 @@ func (msg *ChatMessage) Show() {
 
 	pc := color.New(s2c(string(msg.Author.ID)))
 
-	fmt.Printf("[%s] <%s> %s: %s\n",
+	fmt.Printf("[%s] [%s] <%s> %s: %s\n",
 		color.HiBlueString(timeFormat(msg.CreatedAt)),
+		color.HiBlueString(string(msg.Room.Name)),
 		pc.Sprint(string(msg.Author.ID[:6])),
 		pc.Sprint(msg.Author.Username),
 		msg.Content)
