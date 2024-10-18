@@ -124,14 +124,14 @@ func (s *Server) handleAuth(client *Client) error {
 
 	client.Account.Username = authMsg.Username
 
+	var room *Room
 	if authMsg.RoomID != "" && s.rooms.Has(authMsg.RoomID) {
-		s.rooms.Find(authMsg.RoomID).AddClient(client)
+		room = s.rooms.Find(authMsg.RoomID)
 	} else {
-		room := s.rooms.Find(defaultRoomID)
+		room = s.rooms.Find(defaultRoomID)
 		if room == nil {
 			return errors.New("default room does not exists")
 		}
-		room.AddClient(client)
 	}
 
 	err = client.Conn.WriteMessage(message.AuthMessageServer{
@@ -139,12 +139,18 @@ func (s *Server) handleAuth(client *Client) error {
 		Content: "account authenticated",
 		RoomID:  client.RoomID, // TODO: should check whether the room exists
 	})
-
 	if err != nil {
 		return err
 	}
 
-	return client.Conn.WriteMessage(client.Account)
+	err = client.Conn.WriteMessage(client.Account)
+	if err != nil {
+		return err
+	}
+
+	room.AddClient(client)
+
+	return nil
 }
 
 func (s *Server) handleIncomingMessages(client *Client) {
@@ -199,10 +205,27 @@ func (s *Server) handleCommand(client *Client, msg *message.ChatMessage) {
 		pingCommand(cmdProps)
 		return
 	}
+	if strings.HasPrefix(msg.Content, "join") {
+		joinRoomCommand(cmdProps)
+		return
+	}
+	if strings.HasPrefix(msg.Content, "new") {
+		createRoomCommand(cmdProps)
+		return
+	}
 
 	client.Conn.WriteMessage(
 		message.NewCommandChatMessage(
 			"command not found", time.Now(),
 		),
 	)
+}
+
+func (s *Server) addClientToRoom(client *Client, roomID id.ID) {
+	if s.rooms.Has(client.RoomID) {
+		s.rooms.Find(client.RoomID).RemoveClient(client.Account.ID)
+	}
+	if s.rooms.Has(roomID) {
+		s.rooms.Find(roomID).AddClient(client)
+	}
 }

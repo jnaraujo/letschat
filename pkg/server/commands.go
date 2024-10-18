@@ -51,6 +51,37 @@ func lsCommand(props *CommandProps) {
 	)
 }
 
+func createRoomCommand(props *CommandProps) {
+	words := strings.Split(props.Msg.Content, " ")
+	if len(words) != 2 {
+		return
+	}
+	name := words[1]
+
+	room := NewRoom(name, props.Msg.Author)
+	props.Server.rooms.Add(room)
+
+	props.MessageAuthor.Conn.WriteMessage(message.NewCommandChatMessage(
+		fmt.Sprintf("Room \"%s\" created! Join and invite your friends with: /join %s",
+			room.Name, room.ID),
+		time.Now(),
+	))
+}
+
+func joinRoomCommand(props *CommandProps) {
+	words := strings.Split(props.Msg.Content, " ")
+	if len(words) != 2 {
+		return
+	}
+
+	roomID := words[1]
+	if !props.Server.rooms.Has(id.ID(roomID)) {
+		return
+	}
+
+	props.Server.addClientToRoom(props.MessageAuthor, id.ID(roomID))
+}
+
 func pingCommand(props *CommandProps) {
 	props.MessageAuthor.Conn.WriteMessage(message.NewCommandChatMessage(
 		// in ping commands, the createdAt remains the same as the original sent
