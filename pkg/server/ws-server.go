@@ -83,7 +83,7 @@ func (s *Server) handleNewConnection(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		room := s.rooms.Find(client.RoomID)
 		if room != nil {
-			room.RemoveClient(client.RoomID)
+			room.RemoveClient(client.Account.ID)
 		}
 	}()
 
