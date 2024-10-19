@@ -45,7 +45,24 @@ func (r *Room) AddClient(client *Client) {
 }
 
 func (r *Room) RemoveClient(id id.ID) {
+	client := r.Clients.Find(id)
+	if client == nil {
+		return
+	}
 	r.Clients.Remove(id)
+	r.Broadcast(
+		message.NewServerChatMessage(
+			fmt.Sprintf(
+				"%s (%s) left the chat",
+				client.Account.Username, client.Account.ID,
+			),
+			message.CharRoom{
+				ID:   r.ID,
+				Name: r.Name,
+			},
+			time.Now(),
+		),
+	)
 }
 
 func (r *Room) HasClient(id id.ID) bool {

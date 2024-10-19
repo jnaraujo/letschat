@@ -84,19 +84,6 @@ func (s *Server) handleNewConnection(w http.ResponseWriter, r *http.Request) {
 		room := s.rooms.Find(client.RoomID)
 		if room != nil {
 			room.RemoveClient(client.RoomID)
-			room.Broadcast(
-				message.NewServerChatMessage(
-					fmt.Sprintf(
-						"%s (%s) left the chat",
-						client.Account.Username, client.Account.ID,
-					),
-					message.CharRoom{
-						ID:   room.ID,
-						Name: room.Name,
-					},
-					time.Now(),
-				),
-			)
 		}
 	}()
 
