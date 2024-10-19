@@ -5,5 +5,6 @@ type Connection interface {
 	Read() ([]byte, error)
 	WriteMessage(msg any) error
 	ReadMessage(msg any) error
+	Ping() error
 	Close() error
 }

@@ -56,12 +56,6 @@ func (s *Server) handleNewConnection(w http.ResponseWriter, r *http.Request) {
 	}
 	defer conn.Close()
 
-	conn.SetReadDeadline(time.Now().Add(MaxKeepAlive))
-	conn.SetPingHandler(func(appData string) error {
-		conn.SetReadDeadline(time.Now().Add(MaxKeepAlive))
-		return nil
-	})
-
 	// unauthenticated user
 	client := NewClient(
 		account.NewAccount("Anonymous"),
@@ -69,6 +63,11 @@ func (s *Server) handleNewConnection(w http.ResponseWriter, r *http.Request) {
 			Conn: conn,
 		},
 	)
+
+	conn.SetReadDeadline(time.Now().Add(MaxKeepAlive))
+	conn.SetPingHandler(func(appData string) error {
+		return client.Conn.Ping()
+	})
 
 	err = s.handleAuth(client)
 	if err != nil {
@@ -194,6 +193,10 @@ func (s *Server) handleCommand(client *Client, msg *message.ChatMessage) {
 	// TODO: fix this
 	if strings.HasPrefix(msg.Content, "ls") {
 		lsCommand(cmdProps)
+		return
+	}
+	if strings.HasPrefix(msg.Content, "client-ping") {
+		clientPingCommand(cmdProps)
 		return
 	}
 	if strings.HasPrefix(msg.Content, "ping") {

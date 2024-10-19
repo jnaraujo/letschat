@@ -90,6 +90,10 @@ func pingCommand(props *CommandProps) {
 	))
 }
 
+func clientPingCommand(props *CommandProps) {
+	props.MessageAuthor.Conn.Ping()
+}
+
 func sortClientIDsByJoinTime(clients []*Client) []id.ID {
 	slices.SortFunc(clients, func(clientA, clientB *Client) int {
 		return clientA.JoinedAt.Compare(clientB.JoinedAt)

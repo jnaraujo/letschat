@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"sync"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -55,6 +56,10 @@ func (wsc *WSConnection) ReadMessage(msg any) error {
 		return err
 	}
 	return nil
+}
+
+func (wsc *WSConnection) Ping() error {
+	return wsc.Conn.SetWriteDeadline(time.Now().Add(MaxKeepAlive))
 }
 
 func (wsc *WSConnection) Close() error {
