@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 	"time"
 
@@ -48,8 +49,9 @@ var upgrader = websocket.Upgrader{
 			return false
 		}
 
+		re := regexp.MustCompile(`^([^.]+(\.[^.]+)*)?\.?jnaraujo\.com$`)
 		return strings.HasPrefix(u.Host, "localhost") ||
-			strings.HasPrefix(u.Host, "jnaraujo.com")
+			re.MatchString(u.Host)
 	},
 }
 
