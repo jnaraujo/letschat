@@ -76,7 +76,7 @@ func (s *Server) handleNewConnection(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		room := s.rooms.Find(client.RoomID)
 		if room != nil {
-			s.rooms.Remove(client.RoomID)
+			room.RemoveClient(client.RoomID)
 			room.Broadcast(
 				message.NewServerChatMessage(
 					fmt.Sprintf(
