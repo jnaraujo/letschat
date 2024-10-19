@@ -2,8 +2,11 @@ package client
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -12,7 +15,10 @@ import (
 
 type WSClient struct {
 	Addr string
-	server.WSConnection
+	Conn *websocket.Conn
+
+	rMutex sync.Mutex
+	wMutex sync.Mutex
 }
 
 func NewWSClient(addr string) *WSClient {
@@ -30,7 +36,7 @@ func (wsc *WSClient) Connect(ctx context.Context) (err error) {
 
 	wsc.keepAlive(ctx)
 
-	wsc.WSConnection.Conn, _, err = dialer.DialContext(ctx, wsc.Addr, nil)
+	wsc.Conn, _, err = dialer.DialContext(ctx, wsc.Addr, nil)
 	return err
 }
 
@@ -49,4 +55,50 @@ func (wsc *WSClient) keepAlive(ctx context.Context) {
 			}
 		}
 	}()
+}
+
+func (wsc *WSClient) Write(data []byte) error {
+	wsc.wMutex.Lock()
+	defer wsc.wMutex.Unlock()
+
+	return wsc.Conn.WriteMessage(websocket.TextMessage, data)
+}
+
+func (wsc *WSClient) Read() ([]byte, error) {
+	wsc.rMutex.Lock()
+	defer wsc.rMutex.Unlock()
+
+	messageType, data, err := wsc.Conn.ReadMessage()
+	if err != nil {
+		return nil, err
+	}
+	if messageType != websocket.TextMessage {
+		return nil, errors.New("message type should be text")
+	}
+	return data, nil
+}
+
+func (wsc *WSClient) WriteMessage(msg any) error {
+	data, err := json.Marshal(msg)
+	if err != nil {
+		return err
+	}
+	return wsc.Write(data)
+}
+
+func (wsc *WSClient) ReadMessage(msg any) error {
+	data, err := wsc.Read()
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(data, msg)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (wsc *WSClient) Close() error {
+	return wsc.Conn.Close()
 }
