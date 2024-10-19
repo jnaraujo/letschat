@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 
@@ -59,6 +60,7 @@ func (wsc *WSConnection) ReadMessage(msg any) error {
 }
 
 func (wsc *WSConnection) Ping() error {
+	fmt.Println("Ping received")
 	return wsc.Conn.SetWriteDeadline(time.Now().Add(MaxKeepAlive))
 }
 
