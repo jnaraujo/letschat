@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	defaultAddr = ":3000"
+	defaultAddr = "ws://localhost:3000/ws"
 )
 
 func main() {
