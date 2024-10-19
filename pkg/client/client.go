@@ -41,7 +41,7 @@ func (wsc *WSClient) Connect(ctx context.Context) (err error) {
 
 func (wsc *WSClient) keepAlive(ctx context.Context) {
 	go func() {
-		ticker := time.NewTicker(server.MaxKeepAlive - 5)
+		ticker := time.NewTicker(server.MaxPing)
 		for {
 			select {
 			case <-ctx.Done():
