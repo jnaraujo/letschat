@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"sync"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -26,6 +27,7 @@ func (wsc *WSConnection) Read() ([]byte, error) {
 	wsc.rMutex.Lock()
 	defer wsc.rMutex.Unlock()
 
+	wsc.Conn.SetReadDeadline(time.Now().Add(MaxKeepAlive))
 	messageType, data, err := wsc.Conn.ReadMessage()
 	if err != nil {
 		return nil, err

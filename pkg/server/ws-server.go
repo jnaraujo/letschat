@@ -16,7 +16,7 @@ import (
 
 const (
 	defaultRoomID id.ID = "ALL"
-	MaxKeepAlive        = 15 * time.Second
+	MaxKeepAlive        = 60 * time.Second
 )
 
 type Server struct {
@@ -57,7 +57,8 @@ func (s *Server) handleNewConnection(w http.ResponseWriter, r *http.Request) {
 
 	conn.SetReadDeadline(time.Now().Add(MaxKeepAlive))
 	conn.SetPingHandler(func(appData string) error {
-		conn.SetWriteDeadline(time.Now().Add(MaxKeepAlive))
+		conn.SetReadDeadline(time.Now().Add(MaxKeepAlive))
+		conn.WriteMessage(websocket.PongMessage, nil)
 		return nil
 	})
 
