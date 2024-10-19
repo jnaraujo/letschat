@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"net/url"
-	"regexp"
 	"strings"
 	"time"
 
@@ -44,14 +42,7 @@ func (s *Server) Run(addr string) error {
 var upgrader = websocket.Upgrader{
 	EnableCompression: true,
 	CheckOrigin: func(r *http.Request) bool {
-		u, err := url.Parse(r.Header.Get("Origin"))
-		if err != nil {
-			return false
-		}
-
-		re := regexp.MustCompile(`^([^.]+(\.[^.]+)*)?\.?jnaraujo\.com$`)
-		return strings.HasPrefix(u.Host, "localhost") ||
-			re.MatchString(u.Host)
+		return true
 	},
 }
 
