@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"sync"
 	"time"
@@ -48,13 +47,20 @@ func (wsc *WSClient) keepAlive(ctx context.Context) {
 			case <-ctx.Done():
 				ticker.Stop()
 			case <-ticker.C:
-				err := wsc.Conn.WriteMessage(websocket.PingMessage, nil)
+				err := wsc.Ping()
 				if err != nil {
-					fmt.Println(err)
+					return
 				}
 			}
 		}
 	}()
+}
+
+func (wsc *WSClient) Ping() error {
+	wsc.wMutex.Lock()
+	defer wsc.wMutex.Unlock()
+
+	return wsc.Conn.WriteMessage(websocket.PingMessage, nil)
 }
 
 func (wsc *WSClient) Write(data []byte) error {
