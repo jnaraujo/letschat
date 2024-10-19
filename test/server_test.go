@@ -12,7 +12,7 @@ import (
 )
 
 func BenchmarkWriteMessageServer(b *testing.B) {
-	client := client.NewWSClient("localhost:3000")
+	client := client.NewWSClient("ws://localhost:3000/ws")
 	err := client.Connect()
 	assert.Nil(b, err)
 

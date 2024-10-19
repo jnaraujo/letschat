@@ -32,7 +32,7 @@ func main() {
 }
 
 func handleClient(id, N int) {
-	client := client.NewWSClient(":3000")
+	client := client.NewWSClient("ws://localhost:3000/ws")
 	err := client.Connect()
 	if err != nil {
 		panic(err)
