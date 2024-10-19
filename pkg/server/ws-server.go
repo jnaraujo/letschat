@@ -17,7 +17,7 @@ import (
 const (
 	defaultRoomID id.ID = "ALL"
 	MaxKeepAlive        = 60 * time.Second
-	MaxPing             = (MaxKeepAlive * 9) / 10
+	MaxPing             = MaxKeepAlive / 2
 )
 
 type Server struct {
