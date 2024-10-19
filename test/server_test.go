@@ -1,6 +1,7 @@
 package test
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -12,8 +13,11 @@ import (
 )
 
 func BenchmarkWriteMessageServer(b *testing.B) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	client := client.NewWSClient("ws://localhost:3000/ws")
-	err := client.Connect()
+	err := client.Connect(ctx)
 	assert.Nil(b, err)
 
 	exampleMessage := message.NewChatMessage(

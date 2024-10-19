@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -31,9 +32,12 @@ func main() {
 		addr = defaultAddr
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	fmt.Printf("Trying to connect to %s...\n", addr)
 	client := client.NewWSClient(addr)
-	err := client.Connect()
+	err := client.Connect(ctx)
 	if err != nil {
 		fmt.Println("Failed to connect to the server.", err)
 		return

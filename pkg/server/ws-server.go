@@ -16,6 +16,7 @@ import (
 
 const (
 	defaultRoomID id.ID = "ALL"
+	MaxKeepAlive        = 15 * time.Second
 )
 
 type Server struct {
@@ -53,6 +54,12 @@ func (s *Server) handleNewConnection(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer conn.Close()
+
+	conn.SetReadDeadline(time.Now().Add(MaxKeepAlive))
+	conn.SetPingHandler(func(appData string) error {
+		conn.SetWriteDeadline(time.Now().Add(MaxKeepAlive))
+		return nil
+	})
 
 	// unauthenticated user
 	client := NewClient(
