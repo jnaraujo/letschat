@@ -3,7 +3,10 @@ package protocol
 import (
 	"bytes"
 	"encoding/binary"
+	"errors"
 )
+
+var ErrProtocolVersionMismatch = errors.New("protocol version mismatch")
 
 type PacketProtocolVersion uint8
 
@@ -48,6 +51,10 @@ func PacketFromBytes(data []byte) (Packet, error) {
 
 	if err := binary.Read(buf, binary.BigEndian, &pkt.Header.Version); err != nil {
 		return pkt, err
+	}
+
+	if pkt.Header.Version != ProtocolVersion {
+		return pkt, ErrProtocolVersionMismatch
 	}
 
 	if err := binary.Read(buf, binary.BigEndian, &pkt.Header.PacketType); err != nil {
