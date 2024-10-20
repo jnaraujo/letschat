@@ -72,15 +72,16 @@ func (s *Server) handleNewConnection(w http.ResponseWriter, r *http.Request) {
 
 	err = s.handleAuth(client)
 	if err != nil {
-		if !errors.Is(err, ErrConnectionClosed) {
-			client.Conn.WritePacket(
-				protocol.ServerAuthMessage{
-					Status:  "auth_error",
-					Content: "failed to auth",
-				}.ToPacket(),
-			)
-			slog.Error("failed to initialize connection", "err", err)
+		if errors.Is(err, ErrConnectionClosed) {
+			return
 		}
+		client.Conn.WritePacket(
+			protocol.ServerAuthMessage{
+				Status:  "auth_error",
+				Content: "failed to auth",
+			}.ToPacket(),
+		)
+		slog.Error("failed to initialize connection", "err", err)
 		return
 	}
 
@@ -154,10 +155,14 @@ func (s *Server) handleIncomingMessages(client *Client) {
 	for {
 		pkt, err := client.Conn.ReadPacket()
 		if err != nil {
-			if !errors.Is(err, ErrConnectionClosed) {
-				slog.Error("error reading message", "err", err)
+			if errors.Is(err, protocol.ErrProtocolVersionMismatch) {
+				slog.Error("protocol version mismatch", "err", err)
 				return
 			}
+			if errors.Is(err, ErrConnectionClosed) {
+				return
+			}
+			slog.Error("error reading message", "err", err)
 			break
 		}
 
