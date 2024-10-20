@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -11,7 +12,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/jnaraujo/letschat/pkg/account"
 	"github.com/jnaraujo/letschat/pkg/id"
-	"github.com/jnaraujo/letschat/pkg/message"
+	"github.com/jnaraujo/letschat/pkg/protocol"
 )
 
 const (
@@ -71,7 +72,15 @@ func (s *Server) handleNewConnection(w http.ResponseWriter, r *http.Request) {
 
 	err = s.handleAuth(client)
 	if err != nil {
-		slog.Error("failed to initialize connection", "err", err)
+		if !errors.Is(err, ErrConnectionClosed) {
+			client.Conn.WritePacket(
+				protocol.ServerAuthMessage{
+					Status:  "auth_error",
+					Content: "failed to auth",
+				}.ToPacket(),
+			)
+			slog.Error("failed to initialize connection", "err", err)
+		}
 		return
 	}
 
@@ -91,28 +100,24 @@ func (s *Server) handleNewConnection(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleAuth(client *Client) error {
-	var authMsg message.AuthMessageClient
-	err := client.Conn.ReadMessage(&authMsg)
+	pkt, err := client.Conn.ReadPacket()
 	if err != nil {
-		client.Conn.WriteMessage(message.AuthMessageServer{
-			Status:  "auth_error",
-			Content: "failed to read message",
-		})
+		return err
+	}
+
+	if pkt.Header.PacketType != protocol.PacketTypeAuth {
+		return errors.New("expected auth packet")
+	}
+
+	authMsg, err := protocol.ClientAuthMessageFromPacket(pkt)
+	if err != nil {
 		return err
 	}
 
 	if len(authMsg.Username) <= 3 {
-		client.Conn.WriteMessage(message.AuthMessageServer{
-			Status:  "auth_error",
-			Content: "username is too short",
-		})
 		return errors.New("username is too short")
 	}
 	if len(authMsg.Username) >= 16 {
-		client.Conn.WriteMessage(message.AuthMessageServer{
-			Status:  "auth_error",
-			Content: "username is too long",
-		})
 		return errors.New("username is too long")
 	}
 
@@ -128,16 +133,14 @@ func (s *Server) handleAuth(client *Client) error {
 		}
 	}
 
-	err = client.Conn.WriteMessage(message.AuthMessageServer{
-		Status:  "ok",
-		Content: "account authenticated",
-		RoomID:  client.RoomID, // TODO: should check whether the room exists
-	})
-	if err != nil {
-		return err
-	}
-
-	err = client.Conn.WriteMessage(client.Account)
+	err = client.Conn.WritePacket(
+		protocol.ServerAuthMessage{
+			Status:  "ok",
+			Content: "account authenticated",
+			RoomID:  client.RoomID, // TODO: should check whether the room exists
+			Account: client.Account,
+		}.ToPacket(),
+	)
 	if err != nil {
 		return err
 	}
@@ -149,16 +152,28 @@ func (s *Server) handleAuth(client *Client) error {
 
 func (s *Server) handleIncomingMessages(client *Client) {
 	for {
-		var msg message.ChatMessage
-		err := client.Conn.ReadMessage(&msg)
+		pkt, err := client.Conn.ReadPacket()
+		if err != nil {
+			if !errors.Is(err, ErrConnectionClosed) {
+				slog.Error("error reading message", "err", err)
+				return
+			}
+			break
+		}
+
+		if pkt.Header.PacketType == protocol.PacketTypePing {
+			client.Conn.Ping()
+			continue
+		}
+
+		var msg protocol.ChatMessage
+		err = json.Unmarshal(pkt.Payload, &msg)
 		if err != nil {
 			slog.Error("error reading message", "err", err)
-			// we need to find a way to detect the type of errors.
-			// for now, we are just closing the connection,
-			// even for non-critical errors.
-			return
+			continue
 		}
-		if len(msg.Content) > 100 {
+
+		if len(msg.Content) == 0 || len(msg.Content) > 100 {
 			continue
 		}
 
@@ -173,8 +188,8 @@ func (s *Server) handleIncomingMessages(client *Client) {
 		}
 
 		room.Broadcast(
-			message.NewChatMessage(
-				client.Account, msg.Content, message.CharRoom{
+			protocol.NewChatMessage(
+				client.Account, msg.Content, protocol.ChatRoom{
 					ID:   room.ID,
 					Name: room.Name,
 				}, time.Now(),
@@ -183,7 +198,7 @@ func (s *Server) handleIncomingMessages(client *Client) {
 	}
 }
 
-func (s *Server) handleCommand(client *Client, msg *message.ChatMessage) {
+func (s *Server) handleCommand(client *Client, msg *protocol.ChatMessage) {
 	cmdProps := &CommandProps{
 		MessageAuthor: client,
 		Msg:           msg,
@@ -193,10 +208,6 @@ func (s *Server) handleCommand(client *Client, msg *message.ChatMessage) {
 	// TODO: fix this
 	if strings.HasPrefix(msg.Content, "ls") {
 		lsCommand(cmdProps)
-		return
-	}
-	if strings.HasPrefix(msg.Content, "client-ping") {
-		clientPingCommand(cmdProps)
 		return
 	}
 	if strings.HasPrefix(msg.Content, "ping") {
@@ -212,10 +223,10 @@ func (s *Server) handleCommand(client *Client, msg *message.ChatMessage) {
 		return
 	}
 
-	client.Conn.WriteMessage(
-		message.NewCommandChatMessage(
+	client.Conn.WritePacket(
+		protocol.NewCommandChatMessage(
 			"command not found", time.Now(),
-		),
+		).ToPacket(),
 	)
 }
 

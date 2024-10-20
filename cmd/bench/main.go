@@ -6,9 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/jnaraujo/letschat/pkg/account"
 	"github.com/jnaraujo/letschat/pkg/client"
-	"github.com/jnaraujo/letschat/pkg/message"
+	"github.com/jnaraujo/letschat/pkg/protocol"
 )
 
 func main() {
@@ -44,36 +43,22 @@ func handleClient(id, N int) {
 	defer client.Close()
 
 	// Auth
-	err = client.WriteMessage(message.AuthMessageClient{
+	err = client.WritePacket(protocol.ClientAuthMessage{
 		Username: fmt.Sprintf("username-%d", id),
-	})
+	}.ToPacket())
 	if err != nil {
 		panic(err)
 	}
 
-	var serverAuthMsg message.AuthMessageServer
-	err = client.ReadMessage(&serverAuthMsg)
-	if err != nil {
-		fmt.Println("Failed to read message.", err)
-		return
-	}
-	if serverAuthMsg.Status != "ok" {
-		fmt.Println("Failed to login.", serverAuthMsg.Content)
-		return
-	}
+	pkt, _ := client.ReadPacket()
+	serverAuthMsg, _ := protocol.ServerAuthMessageFromPacket(pkt)
 
-	var account account.Account
-	err = client.ReadMessage(&account)
-	if err != nil {
-		fmt.Println("Failed to read message.", err)
-		return
-	}
-
-	exampleMessage := message.NewChatMessage(
-		&account, fmt.Sprintf("example message %d", id), message.CharRoom{
+	exampleMessagePkt := protocol.NewChatMessage(
+		serverAuthMsg.Account, fmt.Sprintf("example message %d", id),
+		protocol.ChatRoom{
 			ID: "ALL",
 		}, time.Now(),
-	)
+	).ToPacket()
 
 	go func() {
 		for {
@@ -85,6 +70,6 @@ func handleClient(id, N int) {
 	}()
 
 	for range N {
-		client.WriteMessage(exampleMessage)
+		client.WritePacket(exampleMessagePkt)
 	}
 }

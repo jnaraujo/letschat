@@ -1,6 +1,7 @@
-package message
+package protocol
 
 import (
+	"encoding/json"
 	"fmt"
 	"hash/fnv"
 	"time"
@@ -10,7 +11,7 @@ import (
 	"github.com/jnaraujo/letschat/pkg/id"
 )
 
-type CharRoom struct {
+type ChatRoom struct {
 	ID   id.ID  `json:"id"`
 	Name string `json:"name"`
 }
@@ -18,17 +19,16 @@ type CharRoom struct {
 type ChatMessage struct {
 	ID        id.ID            `json:"id"`
 	IsServer  bool             `json:"is_server"`
-	Room      CharRoom         `json:"room"`
+	Room      ChatRoom         `json:"room"`
 	Author    *account.Account `json:"author"`
 	Content   string           `json:"content"`
 	CreatedAt time.Time        `json:"created_at"`
 	IsCommand bool             `json:"is_command"`
 }
 
-func NewChatMessage(
-	author *account.Account, content string, chatRoom CharRoom, createdAt time.Time,
-) *ChatMessage {
-	return &ChatMessage{
+func NewChatMessage(author *account.Account, content string,
+	chatRoom ChatRoom, createdAt time.Time) ChatMessage {
+	return ChatMessage{
 		ID:        id.NewID(22),
 		Author:    author,
 		Content:   content,
@@ -39,7 +39,7 @@ func NewChatMessage(
 	}
 }
 
-func NewServerChatMessage(content string, chatRoom CharRoom, createdAt time.Time) *ChatMessage {
+func NewServerChatMessage(content string, chatRoom ChatRoom, createdAt time.Time) ChatMessage {
 	msg := NewChatMessage(&account.Account{
 		ID:       "SERVER",
 		Username: "SERVER",
@@ -48,11 +48,11 @@ func NewServerChatMessage(content string, chatRoom CharRoom, createdAt time.Time
 	return msg
 }
 
-func NewCommandChatMessage(content string, createdAt time.Time) *ChatMessage {
+func NewCommandChatMessage(content string, createdAt time.Time) ChatMessage {
 	msg := NewChatMessage(&account.Account{
 		ID:       "COMMAND",
 		Username: "COMMAND",
-	}, content, CharRoom{
+	}, content, ChatRoom{
 		ID:   id.ID("COMMAND_RESPONSE"),
 		Name: "Command Response",
 	}, createdAt)
@@ -60,7 +60,24 @@ func NewCommandChatMessage(content string, createdAt time.Time) *ChatMessage {
 	return msg
 }
 
-func (msg *ChatMessage) Show() {
+func ChatMessageFromPacket(pkt Packet) (ChatMessage, error) {
+	var msg ChatMessage
+	if err := json.Unmarshal(pkt.Payload, &msg); err != nil {
+		return msg, err
+	}
+	return msg, nil
+}
+
+func (msg ChatMessage) ToPacket() Packet {
+	payload, err := json.Marshal(msg)
+	if err != nil {
+		panic(err)
+	}
+	return NewPacket(PacketTypeMessage, payload)
+}
+
+// FIX: move this to another place
+func (msg ChatMessage) Show() {
 	if msg.IsServer {
 		c := color.New(color.Italic, color.Faint)
 		fmt.Printf("[%s] <%s>: %s\n",

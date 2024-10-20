@@ -8,10 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jnaraujo/letschat/pkg/account"
 	"github.com/jnaraujo/letschat/pkg/client"
 	"github.com/jnaraujo/letschat/pkg/id"
-	"github.com/jnaraujo/letschat/pkg/message"
+	"github.com/jnaraujo/letschat/pkg/protocol"
 )
 
 const (
@@ -50,18 +49,22 @@ func main() {
 	scanner.Scan()
 	username := scanner.Text()
 
-	err = client.WriteMessage(message.AuthMessageClient{
+	err = client.WritePacket(protocol.ClientAuthMessage{
 		Username: username,
-	})
+	}.ToPacket())
 	if err != nil {
 		fmt.Println("Failed to send message.", err)
 		return
 	}
 
-	var serverAuthMsg message.AuthMessageServer
-	err = client.ReadMessage(&serverAuthMsg)
+	pkt, err := client.ReadPacket()
 	if err != nil {
 		fmt.Println("Failed to read message.", err)
+		return
+	}
+	serverAuthMsg, err := protocol.ServerAuthMessageFromPacket(pkt)
+	if err != nil {
+		fmt.Println("Failed to server auth from packet.", err)
 		return
 	}
 	if serverAuthMsg.Status != "ok" {
@@ -69,17 +72,14 @@ func main() {
 		return
 	}
 
-	var account account.Account
-	err = client.ReadMessage(&account)
-	if err != nil {
-		fmt.Println("Failed to read message.", err)
-		return
-	}
-
 	go func() {
 		for {
-			var incomingMsg message.ChatMessage
-			err := client.ReadMessage(&incomingMsg)
+			inPkt, err := client.ReadPacket()
+			if err != nil {
+				fmt.Println("Failed to read message.", err)
+				break
+			}
+			incomingMsg, err := protocol.ChatMessageFromPacket(inPkt)
 			if err != nil {
 				fmt.Println("Failed to read message.", err)
 				break
@@ -98,8 +98,8 @@ func main() {
 		content := scanner.Text()
 		content = strings.TrimSpace(content)
 
-		msg := message.NewChatMessage(
-			&account, content, message.CharRoom{
+		msg := protocol.NewChatMessage(
+			serverAuthMsg.Account, content, protocol.ChatRoom{
 				ID: id.ID("ALL"),
 			}, time.Now(),
 		)
@@ -110,7 +110,7 @@ func main() {
 			clearLine()
 		}
 
-		err := client.WriteMessage(msg)
+		err := client.WritePacket(msg.ToPacket())
 		if err != nil {
 			fmt.Println("Failed to send message.", err)
 			continue

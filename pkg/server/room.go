@@ -7,7 +7,7 @@ import (
 
 	"github.com/jnaraujo/letschat/pkg/account"
 	"github.com/jnaraujo/letschat/pkg/id"
-	"github.com/jnaraujo/letschat/pkg/message"
+	"github.com/jnaraujo/letschat/pkg/protocol"
 )
 
 type Room struct {
@@ -30,18 +30,16 @@ func (r *Room) AddClient(client *Client) {
 	client.RoomID = r.ID
 	r.Clients.Add(client)
 
-	r.Broadcast(
-		message.NewServerChatMessage(
-			fmt.Sprintf(
-				"%s (%s) joined the chat", client.Account.Username, client.Account.ID,
-			),
-			message.CharRoom{
-				ID:   r.ID,
-				Name: r.Name,
-			},
-			time.Now(),
+	r.Broadcast(protocol.NewServerChatMessage(
+		fmt.Sprintf(
+			"%s (%s) joined the chat", client.Account.Username, client.Account.ID,
 		),
-	)
+		protocol.ChatRoom{
+			ID:   r.ID,
+			Name: r.Name,
+		},
+		time.Now(),
+	))
 }
 
 func (r *Room) RemoveClient(id id.ID) {
@@ -50,28 +48,28 @@ func (r *Room) RemoveClient(id id.ID) {
 		return
 	}
 	r.Clients.Remove(id)
-	r.Broadcast(
-		message.NewServerChatMessage(
-			fmt.Sprintf(
-				"%s (%s) left the chat",
-				client.Account.Username, client.Account.ID,
-			),
-			message.CharRoom{
-				ID:   r.ID,
-				Name: r.Name,
-			},
-			time.Now(),
+
+	r.Broadcast(protocol.NewServerChatMessage(
+		fmt.Sprintf(
+			"%s (%s) left the chat",
+			client.Account.Username, client.Account.ID,
 		),
-	)
+		protocol.ChatRoom{
+			ID:   r.ID,
+			Name: r.Name,
+		},
+		time.Now(),
+	))
 }
 
 func (r *Room) HasClient(id id.ID) bool {
 	return r.Clients.Has(id)
 }
 
-func (r *Room) Broadcast(msg any) {
+func (r *Room) Broadcast(msg protocol.ChatMessage) {
+	pkt := msg.ToPacket()
 	for _, client := range r.Clients.List() {
-		client.Conn.WriteMessage(msg)
+		client.Conn.WritePacket(pkt)
 	}
 }
 

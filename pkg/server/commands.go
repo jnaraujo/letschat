@@ -7,13 +7,13 @@ import (
 	"time"
 
 	"github.com/jnaraujo/letschat/pkg/id"
-	"github.com/jnaraujo/letschat/pkg/message"
+	"github.com/jnaraujo/letschat/pkg/protocol"
 	"github.com/jnaraujo/letschat/pkg/utils"
 )
 
 type CommandProps struct {
 	MessageAuthor *Client
-	Msg           *message.ChatMessage
+	Msg           *protocol.ChatMessage
 	Server        *Server
 }
 
@@ -22,11 +22,11 @@ func lsCommand(props *CommandProps) {
 
 	room := props.Server.rooms.Find(props.MessageAuthor.RoomID)
 	if room == nil {
-		props.MessageAuthor.Conn.WriteMessage(
-			message.NewCommandChatMessage(
+		props.MessageAuthor.Conn.WritePacket(
+			protocol.NewCommandChatMessage(
 				"You need to be connected to a room to view the list of online clients.",
 				time.Now(),
-			),
+			).ToPacket(),
 		)
 		return
 	}
@@ -46,8 +46,8 @@ func lsCommand(props *CommandProps) {
 	}
 	res.WriteString("================================")
 
-	props.MessageAuthor.Conn.WriteMessage(
-		message.NewCommandChatMessage(res.String(), time.Now()),
+	props.MessageAuthor.Conn.WritePacket(
+		protocol.NewCommandChatMessage(res.String(), time.Now()).ToPacket(),
 	)
 }
 
@@ -61,11 +61,13 @@ func createRoomCommand(props *CommandProps) {
 	room := NewRoom(name, props.Msg.Author)
 	props.Server.rooms.Add(room)
 
-	props.MessageAuthor.Conn.WriteMessage(message.NewCommandChatMessage(
-		fmt.Sprintf("Room \"%s\" created! Join and invite your friends with: /join %s",
-			room.Name, room.ID),
-		time.Now(),
-	))
+	props.MessageAuthor.Conn.WritePacket(
+		protocol.NewCommandChatMessage(
+			fmt.Sprintf("Room \"%s\" created! Join and invite your friends with: /join %s",
+				room.Name, room.ID),
+			time.Now(),
+		).ToPacket(),
+	)
 }
 
 func joinRoomCommand(props *CommandProps) {
@@ -83,15 +85,13 @@ func joinRoomCommand(props *CommandProps) {
 }
 
 func pingCommand(props *CommandProps) {
-	props.MessageAuthor.Conn.WriteMessage(message.NewCommandChatMessage(
-		// in ping commands, the createdAt remains the same as the original sent
-		// maybe fix this in the future idk
-		"Pong!", props.Msg.CreatedAt,
-	))
-}
-
-func clientPingCommand(props *CommandProps) {
-	props.MessageAuthor.Conn.Ping()
+	props.MessageAuthor.Conn.WritePacket(
+		protocol.NewCommandChatMessage(
+			// in ping commands, the createdAt remains the same as the original sent
+			// maybe fix this in the future idk
+			"Pong!", props.Msg.CreatedAt,
+		).ToPacket(),
+	)
 }
 
 func sortClientIDsByJoinTime(clients []*Client) []id.ID {

@@ -2,13 +2,13 @@ package client
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"net/http"
 	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/jnaraujo/letschat/pkg/protocol"
 	"github.com/jnaraujo/letschat/pkg/server"
 )
 
@@ -67,7 +67,7 @@ func (wsc *WSClient) Write(data []byte) error {
 	wsc.wMutex.Lock()
 	defer wsc.wMutex.Unlock()
 
-	return wsc.Conn.WriteMessage(websocket.TextMessage, data)
+	return wsc.Conn.WriteMessage(websocket.BinaryMessage, data)
 }
 
 func (wsc *WSClient) Read() ([]byte, error) {
@@ -78,31 +78,27 @@ func (wsc *WSClient) Read() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	if messageType != websocket.TextMessage {
+	if messageType != websocket.BinaryMessage {
 		return nil, errors.New("message type should be text")
 	}
 	return data, nil
 }
 
-func (wsc *WSClient) WriteMessage(msg any) error {
-	data, err := json.Marshal(msg)
+func (wsc *WSClient) WritePacket(pkt protocol.Packet) error {
+	data, err := pkt.ToBinary()
 	if err != nil {
 		return err
 	}
 	return wsc.Write(data)
 }
 
-func (wsc *WSClient) ReadMessage(msg any) error {
+func (wsc *WSClient) ReadPacket() (protocol.Packet, error) {
 	data, err := wsc.Read()
 	if err != nil {
-		return err
+		return protocol.Packet{}, err
 	}
 
-	err = json.Unmarshal(data, msg)
-	if err != nil {
-		return err
-	}
-	return nil
+	return protocol.PacketFromBytes(data)
 }
 
 func (wsc *WSClient) Close() error {
