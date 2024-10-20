@@ -23,7 +23,7 @@ func (wsc *WSConnection) Write(data []byte) error {
 	err := wsc.Conn.WriteMessage(websocket.BinaryMessage, data)
 	if err != nil {
 		if websocket.IsUnexpectedCloseError(err,
-			websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+			websocket.CloseGoingAway, websocket.CloseAbnormalClosure, websocket.CloseNoStatusReceived) {
 			return err
 		}
 		return ErrConnectionClosed
@@ -38,7 +38,7 @@ func (wsc *WSConnection) Read() ([]byte, error) {
 	messageType, data, err := wsc.Conn.ReadMessage()
 	if err != nil {
 		if websocket.IsUnexpectedCloseError(err,
-			websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+			websocket.CloseGoingAway, websocket.CloseAbnormalClosure, websocket.CloseNoStatusReceived) {
 			return nil, err
 		}
 		return nil, ErrConnectionClosed
