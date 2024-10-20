@@ -28,7 +28,7 @@ func main() {
 	total := time.Since(start)
 
 	fmt.Println(`Total: `, maxClients*connectionsPerClient)
-	fmt.Println(`BenchmarkWriteMessageServer took:`, total.Milliseconds())
+	fmt.Println(`Msg/Sec:`, maxClients*connectionsPerClient/int(total.Seconds()))
 }
 
 func handleClient(id, N int) {
