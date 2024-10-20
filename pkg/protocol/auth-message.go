@@ -9,7 +9,7 @@ import (
 
 type ClientAuthMessage struct {
 	Username string `json:"username"`
-	RoomID   id.ID  `json:"room_id"`
+	RoomID   id.ID  `json:"room_id,omitempty"`
 }
 
 func ClientAuthMessageFromPacket(pkt Packet) (ClientAuthMessage, error) {
@@ -31,8 +31,8 @@ func (msg ClientAuthMessage) ToPacket() Packet {
 type ServerAuthMessage struct {
 	Status  string           `json:"status"`
 	Content string           `json:"content"`
-	RoomID  id.ID            `json:"room_id"`
-	Account *account.Account `json:"account"`
+	RoomID  id.ID            `json:"room_id,omitempty"`
+	Account *account.Account `json:"account,omitempty"`
 }
 
 func ServerAuthMessageFromPacket(pkt Packet) (ServerAuthMessage, error) {
