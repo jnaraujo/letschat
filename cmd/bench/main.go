@@ -35,7 +35,7 @@ func handleClient(id, N int) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	client := client.NewWSClient("ws://localhost:3000/ws")
+	client := client.NewWSClient("ws://localhost:3000/lc")
 	err := client.Connect(ctx)
 	if err != nil {
 		panic(err)
