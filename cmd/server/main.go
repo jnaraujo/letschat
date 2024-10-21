@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	addr = "localhost:2257"
+	addr = ":2257"
 )
 
 func main() {
