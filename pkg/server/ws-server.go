@@ -34,7 +34,7 @@ func NewServer() *Server {
 	defaultRoom.ID = defaultRoomID
 	server.rooms.Add(defaultRoom)
 
-	http.HandleFunc("/ws", server.handleNewConnection)
+	http.HandleFunc("/lc", server.handleNewConnection)
 	return server
 }
 

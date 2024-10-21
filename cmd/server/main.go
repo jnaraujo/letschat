@@ -6,10 +6,14 @@ import (
 	"github.com/jnaraujo/letschat/pkg/server"
 )
 
+const (
+	addr = "localhost:2257"
+)
+
 func main() {
-	fmt.Println("Starting server on port 3000")
+	fmt.Printf("Starting server on %s", addr)
 	server := server.NewServer()
-	err := server.Run(":3000")
+	err := server.Run(addr)
 	if err != nil {
 		panic(err)
 	}
