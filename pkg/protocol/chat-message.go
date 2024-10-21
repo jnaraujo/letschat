@@ -60,7 +60,7 @@ func NewCommandChatMessage(content string, createdAt time.Time) ChatMessage {
 	return msg
 }
 
-func ChatMessageFromPacket(pkt Packet) (ChatMessage, error) {
+func ChatMessageFromPacket(pkt *Packet) (ChatMessage, error) {
 	var msg ChatMessage
 	if err := json.Unmarshal(pkt.Payload, &msg); err != nil {
 		return msg, err
@@ -68,7 +68,7 @@ func ChatMessageFromPacket(pkt Packet) (ChatMessage, error) {
 	return msg, nil
 }
 
-func (msg ChatMessage) ToPacket() Packet {
+func (msg ChatMessage) ToPacket() *Packet {
 	payload, err := json.Marshal(msg)
 	if err != nil {
 		panic(err)

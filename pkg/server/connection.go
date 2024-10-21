@@ -10,8 +10,8 @@ type Connection interface {
 	Write(data []byte) error
 	Read() ([]byte, error)
 
-	WritePacket(pkt protocol.Packet) error
-	ReadPacket() (protocol.Packet, error)
+	WritePacket(pkt *protocol.Packet) error
+	ReadPacket() (*protocol.Packet, error)
 
 	Ping() error
 	Close() error

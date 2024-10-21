@@ -12,7 +12,7 @@ type ClientAuthMessage struct {
 	RoomID   id.ID  `json:"room_id,omitempty"`
 }
 
-func ClientAuthMessageFromPacket(pkt Packet) (ClientAuthMessage, error) {
+func ClientAuthMessageFromPacket(pkt *Packet) (ClientAuthMessage, error) {
 	var msg ClientAuthMessage
 	if err := json.Unmarshal(pkt.Payload, &msg); err != nil {
 		return msg, err
@@ -20,7 +20,7 @@ func ClientAuthMessageFromPacket(pkt Packet) (ClientAuthMessage, error) {
 	return msg, nil
 }
 
-func (msg ClientAuthMessage) ToPacket() Packet {
+func (msg ClientAuthMessage) ToPacket() *Packet {
 	payload, err := json.Marshal(msg)
 	if err != nil {
 		panic(err)
@@ -35,7 +35,7 @@ type ServerAuthMessage struct {
 	Account *account.Account `json:"account,omitempty"`
 }
 
-func ServerAuthMessageFromPacket(pkt Packet) (ServerAuthMessage, error) {
+func ServerAuthMessageFromPacket(pkt *Packet) (ServerAuthMessage, error) {
 	var msg ServerAuthMessage
 	if err := json.Unmarshal(pkt.Payload, &msg); err != nil {
 		return msg, err
@@ -43,7 +43,7 @@ func ServerAuthMessageFromPacket(pkt Packet) (ServerAuthMessage, error) {
 	return msg, nil
 }
 
-func (msg ServerAuthMessage) ToPacket() Packet {
+func (msg ServerAuthMessage) ToPacket() *Packet {
 	payload, err := json.Marshal(msg)
 	if err != nil {
 		panic(err)

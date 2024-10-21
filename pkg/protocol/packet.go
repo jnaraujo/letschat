@@ -34,8 +34,8 @@ type Packet struct {
 	Payload []byte
 }
 
-func NewPacket(pktType PacketType, payload []byte) Packet {
-	return Packet{
+func NewPacket(pktType PacketType, payload []byte) *Packet {
+	return &Packet{
 		Header: PacketHeader{
 			Version:    ProtocolVersion,
 			PacketType: pktType,
@@ -45,10 +45,9 @@ func NewPacket(pktType PacketType, payload []byte) Packet {
 	}
 }
 
-func PacketFromBytes(data []byte) (Packet, error) {
+func PacketFromBytes(data []byte) (*Packet, error) {
 	buf := bytes.NewReader(data)
-	var pkt Packet
-
+	pkt := new(Packet)
 	if err := binary.Read(buf, binary.BigEndian, &pkt.Header.Version); err != nil {
 		return pkt, err
 	}
@@ -73,7 +72,7 @@ func PacketFromBytes(data []byte) (Packet, error) {
 	return pkt, nil
 }
 
-func (pkt Packet) ToBinary() ([]byte, error) {
+func (pkt *Packet) ToBinary() ([]byte, error) {
 	var buf bytes.Buffer
 
 	if err := binary.Write(&buf, binary.BigEndian, pkt.Header.Version); err != nil {

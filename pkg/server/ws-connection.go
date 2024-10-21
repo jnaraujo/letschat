@@ -49,7 +49,7 @@ func (wsc *WSConnection) Read() ([]byte, error) {
 	return data, nil
 }
 
-func (wsc *WSConnection) WritePacket(pkt protocol.Packet) error {
+func (wsc *WSConnection) WritePacket(pkt *protocol.Packet) error {
 	data, err := pkt.ToBinary()
 	if err != nil {
 		return err
@@ -57,10 +57,10 @@ func (wsc *WSConnection) WritePacket(pkt protocol.Packet) error {
 	return wsc.Write(data)
 }
 
-func (wsc *WSConnection) ReadPacket() (protocol.Packet, error) {
+func (wsc *WSConnection) ReadPacket() (*protocol.Packet, error) {
 	data, err := wsc.Read()
 	if err != nil {
-		return protocol.Packet{}, err
+		return nil, err
 	}
 
 	return protocol.PacketFromBytes(data)
