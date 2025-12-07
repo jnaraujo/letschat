@@ -194,6 +194,12 @@ func (s *Server) handleIncomingMessages(client *Client) {
 			continue
 		}
 
+		slog.Info("message received",
+			"from", client.Account.Username,
+			"room", room.Name,
+			"content", msg.Content,
+		)
+
 		room.Broadcast(
 			protocol.NewChatMessage(
 				client.Account, msg.Content, protocol.ChatRoom{
