@@ -12,6 +12,8 @@ import (
 type WSConnection struct {
 	Conn *websocket.Conn
 
+	IPAddr string
+
 	rMutex sync.Mutex
 	wMutex sync.Mutex
 }
@@ -75,5 +77,5 @@ func (wsc *WSConnection) Close() error {
 }
 
 func (wsc *WSConnection) RemoteAddr() string {
-	return wsc.Conn.RemoteAddr().String()
+	return wsc.IPAddr
 }

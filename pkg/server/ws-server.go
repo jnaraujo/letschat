@@ -57,11 +57,14 @@ func (s *Server) handleNewConnection(w http.ResponseWriter, r *http.Request) {
 	}
 	defer conn.Close()
 
+	userIP := getRealIP(r)
+
 	// unauthenticated user
 	client := NewClient(
 		account.NewAccount("Anonymous"),
 		&WSConnection{
-			Conn: conn,
+			Conn:   conn,
+			IPAddr: userIP,
 		},
 	)
 
