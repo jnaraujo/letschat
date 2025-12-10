@@ -195,6 +195,7 @@ func (s *Server) handleIncomingMessages(client *Client) {
 		}
 
 		slog.Info("message received",
+			"from-addr", client.Conn.RemoteAddr(),
 			"from", client.Account.Username,
 			"room", room.Name,
 			"content", msg.Content,

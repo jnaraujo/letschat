@@ -73,3 +73,7 @@ func (wsc *WSConnection) Ping() error {
 func (wsc *WSConnection) Close() error {
 	return wsc.Conn.Close()
 }
+
+func (wsc *WSConnection) RemoteAddr() string {
+	return wsc.Conn.RemoteAddr().String()
+}

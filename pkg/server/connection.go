@@ -13,6 +13,8 @@ type Connection interface {
 	WritePacket(pkt *protocol.Packet) error
 	ReadPacket() (*protocol.Packet, error)
 
+	RemoteAddr() string
+
 	Ping() error
 	Close() error
 }
