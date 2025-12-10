@@ -88,7 +88,7 @@ func (s *Server) handleNewConnection(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.Info("client authenticated", "username", client.Account.Username, "id", client.Account.ID)
+	slog.Info("client authenticated", "addr", client.Conn.RemoteAddr(), "username", client.Account.Username, "id", client.Account.ID)
 
 	clientRoom := s.rooms.Find(client.RoomID)
 	if clientRoom == nil {
